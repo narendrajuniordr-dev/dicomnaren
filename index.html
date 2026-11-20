@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Viewer DICOM</title>
+<style>
+:root{--bg:#0b0d10;--panel:#14181d;--line:#262c34;--tx:#d9dee5;--mut:#8a94a1;--acc:#3fc1b0;--ax:#f2c14e;--cor:#4ab3f4;--sag:#f2649a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#app{display:flex;flex-direction:column;height:100%}
+#bar{display:flex;gap:6px;align-items:center;padding:6px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;flex:none}
+#bar::-webkit-scrollbar{display:none}
+.grp{display:flex;gap:3px;align-items:center;flex:none;padding-right:6px;border-right:1px solid var(--line)}
+.grp:last-child{border-right:0}
+button,select{font:inherit;color:var(--tx);background:#1d232b;border:1px solid #2c343e;border-radius:6px;height:32px;padding:0 9px;cursor:pointer;white-space:nowrap}
+select{padding:0 6px;max-width:210px}
+button:hover{background:#252c35}
+button.on{background:var(--acc);color:#04201c;border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.35;cursor:default}
+#views{flex:1;display:grid;gap:3px;background:#2a2f36;min-height:0;position:relative}
+.view{position:relative;min-width:0;min-height:0;overflow:hidden;background:#000;border:2px solid #000}
+.view.active{border-color:#e0453a}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#open{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:5;padding:20px}
+#open .box{max-width:460px;width:100%;text-align:center}
+#open h1{font-size:20px;margin:0 0 6px}
+#open p{color:var(--mut);margin:6px 0 18px}
+#open .big{height:46px;font-size:15px;width:100%;margin:5px 0}
+#open .big.pri{background:var(--acc);color:#04201c;border-color:var(--acc);font-weight:700}
+#open.drag{outline:2px dashed var(--acc);outline-offset:-12px}
+#prog{margin-top:14px;color:var(--mut);min-height:20px}
+#prog .barw{height:6px;background:#1d232b;border-radius:3px;overflow:hidden;margin-top:8px}
+#prog .barw i{display:block;height:100%;width:0;background:var(--acc)}
+.note{font-size:12px;color:var(--mut);margin-top:14px}
+.hide{display:none!important}
+#modal{position:fixed;inset:0;background:#000a;z-index:10;display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;max-width:560px;max-height:90vh;overflow:auto;padding:16px 18px}
+#modal h2{margin:0 0 8px;font-size:16px}
+#modal table{border-collapse:collapse;width:100%}
+#modal td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:top}
+#modal td:first-child{color:var(--acc);white-space:nowrap}
+.row{display:contents}
+@media (max-width:760px){#bar{flex-direction:column;align-items:stretch;gap:4px;padding:4px;overflow:visible}.row{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.row::-webkit-scrollbar{display:none}.grp{padding-right:4px}button,select{height:30px;padding:0 8px;font-size:12px}select{max-width:180px}}
+#plist{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:100%;background:var(--panel);border-right:1px solid var(--line);z-index:9;display:flex;flex-direction:column;box-shadow:8px 0 24px #0008}
+#plist header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#plist header b{flex:1;font-size:15px}
+#plist .acts{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#plist .acts button{flex:1}
+#plItems{flex:1;overflow:auto;padding:6px}
+.pi{position:relative;padding:9px 34px 9px 10px;border:1px solid #2c343e;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#181d23}
+.pi.on{border-color:var(--acc);background:#14302c}
+.pi b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi span{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pi span+span{white-space:normal}
+.pi button{position:absolute;top:6px;right:6px;height:24px;width:24px;padding:0;border-radius:12px}
+#plProg{padding:6px 10px;font-size:12px;color:var(--mut)}
+#plProg .barw{height:5px;background:#1d232b;border-radius:3px;overflow:hidden;margin-top:4px}#plProg .barw i{display:block;height:100%;width:0;background:var(--acc)}
+@media (min-width:761px){body.plist #app{margin-left:300px}}
+#ask{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);z-index:8;display:flex;flex-direction:column;box-shadow:-8px 0 24px #0008}
+#ask header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#ask header b{flex:1;font-size:15px}
+#ask .body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+#ask label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
+#ask input,#ask textarea,#ask select{width:100%;font:inherit;color:var(--tx);background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:6px 8px}
+#ask select{height:32px;max-width:none}
+#ask textarea{resize:vertical;min-height:54px}
+#thumbs{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;min-height:20px;padding-bottom:4px;flex:none}#thumbs:not(:empty){min-height:108px}
+#thumbs .th{position:relative;flex:none;width:84px}
+#thumbs img{width:84px;height:84px;object-fit:contain;background:#000;border:1px solid #2c343e;border-radius:4px;display:block}
+#thumbs .th span{font-size:10px;color:var(--mut);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#thumbs .th button{position:absolute;top:2px;right:2px;height:20px;width:20px;padding:0;border-radius:10px;font-size:12px;line-height:1}
+#ask .rowb{display:flex;gap:6px;flex-wrap:wrap}
+#ask .pri,#plist .pri{background:var(--acc);color:#04201c;border-color:var(--acc);font-weight:700}
+#ansBox{background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;min-height:40px;line-height:1.45}
+#ansBox .code{background:#000;border:1px solid #2c343e;border-radius:6px;padding:8px;margin:6px 0;font:12.5px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;position:relative}
+#ansBox .code button{position:absolute;top:4px;right:4px;height:24px;font-size:11px;padding:0 8px}
+#ask .warn{font-size:11.5px;color:#d9a35b}
+#ask details summary{cursor:pointer;color:var(--mut);font-size:12px}
+@media (min-width:761px){body.asking #app{margin-right:400px}}
+@media (max-width:760px){#ask{width:100%;top:auto;height:78%;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0}}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d232b;border:1px solid var(--line);padding:8px 14px;border-radius:8px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bar"><div class="row">
+    <div class="grp"><button id="bPat" title="Daftar pasien">☰ Pasien</button><button id="bOpen" title="Tambah pasien (zip / file)">+ Buka</button>
+      <select id="selSeries" title="Pilih seri"></select></div>
+    <div class="grp" id="gMode">
+      <button id="bMpr" title="MPR 3 bidang dari satu seri [M]">MPR</button>
+      <button id="bCmp" title="Bandingkan beberapa seri/sequence [B]">Banding</button>
+      <select id="selGrid" title="Jumlah panel banding"><option value="1x2">2 panel</option><option value="1x3">3 panel</option><option value="2x2">4 panel</option><option value="2x3">6 panel</option></select>
+      <button id="bSync" title="Sinkronkan posisi slice antar seri (berdasarkan posisi pasien)">Sinkron</button>
+      <button id="bRef" title="Garis referensi posisi slice aktif di seri lain">Ref</button></div>
+    <div class="grp" id="gView">
+      <button data-v="ax" title="Aksial">Ax</button><button data-v="cor" title="Koronal">Cor</button><button data-v="sag" title="Sagital">Sag</button></div></div><div class="row">
+    <div class="grp"><select id="selWin" title="Window"></select>
+      <select id="selSlab" title="Slab / MIP">
+        <option value="0|">Tipis</option><option value="5|max">MIP 5 mm</option><option value="10|max">MIP 10 mm</option><option value="20|max">MIP 20 mm</option><option value="10|min">MinIP 10 mm</option><option value="5|avg">Rata² 5 mm</option><option value="10|avg">Rata² 10 mm</option></select></div>
+    <div class="grp" id="gTool">
+      <button data-t="scroll" title="Geser jari/mouse naik-turun untuk ganti slice [S]">Scroll</button>
+      <button data-t="wl" title="Window/level: kiri-kanan = lebar, atas-bawah = level [W]">W/L</button>
+      <button data-t="pan" title="Geser gambar [G]">Geser</button>
+      <button data-t="zoom" title="Zoom [Z]">Zoom</button>
+      <button data-t="len" title="Ukur jarak (mm) [L]">Ukur</button>
+      <button data-t="hu" title="Densitas satu titik (HU) — ketuk/klik titik [H]">HU</button>
+      <button data-t="roi" title="ROI densitas: rerata, SD, min/maks HU dan luas [O]">ROI</button>
+      <button data-t="cross" title="Ketuk untuk memindah titik silang MPR [X]">Silang</button></div>
+    <div class="grp">
+      <button id="bCross" title="Tampilkan garis silang (C)">Garis</button>
+      <button id="bId" title="Tampilkan/sembunyikan identitas (I)">ID</button>
+      <button id="bClear" title="Hapus semua ukuran">Hapus ukur</button>
+      <button id="bReset" title="Reset zoom/geser (R)">Reset</button>
+      <button id="bSave" title="Simpan/bagikan gambar tampilan aktif tanpa identitas [Shift+S]">Simpan</button>
+      <button id="bAsk" class="hide" title="Kirim slice yang ditandai ke Claude untuk usulan temuan & draf bacaan">Tanya Claude</button>
+      <button id="bHelp">?</button></div></div>
+  </div>
+  <div id="views">
+    <div id="open"><div class="box">
+      <h1>Viewer DICOM</h1>
+      <p>Buka file .zip, file .dcm, atau folder hasil ekspor (Horos dll).</p>
+      <button class="big pri" id="bPickFiles">Pilih file / zip</button>
+      <button class="big" id="bPickDir">Pilih folder</button>
+      <input type="file" id="inFiles" multiple class="hide">
+      <input type="file" id="inDir" webkitdirectory multiple class="hide">
+      <div id="prog"></div>
+      <div class="note">File diproses di perangkat ini saja, tidak diunggah ke mana pun.<br>Mendukung DICOM tidak terkompresi, JPEG Lossless, dan RLE (CT, MRI, CR/DX). Di komputer bisa juga seret-lepas file/folder ke sini.</div>
+    </div></div>
+  </div>
+</div>
+<div id="modal" class="hide"><div class="box">
+  <h2>Cara pakai</h2>
+  <table>
+    <tr><td>☰ Pasien · + Buka</td><td>Buka beberapa pasien (zip/folder) sekaligus atau bergantian; pindah pasien dari daftar; × untuk menghapus dari memori</td></tr><tr><td>Satu jari / klik kiri</td><td>Menjalankan alat aktif (Scroll, W/L, Geser, Zoom, Ukur, ROI, Silang)</td></tr>
+    <tr><td>Dua jari</td><td>Cubit untuk zoom, geser untuk memindah gambar</td></tr>
+    <tr><td>Ketuk dua kali</td><td>Perbesar satu panel / kembali</td></tr><tr><td>MPR</td><td>Aksial, koronal, sagital dari satu seri. Ax/Cor/Sag = perbesar panel itu</td></tr><tr><td>Banding</td><td>Beberapa seri/sequence berdampingan. Ketuk panel, lalu pilih seri di menu seri. Ax/Cor/Sag = ganti bidang panel aktif</td></tr><tr><td>Sinkron · Ref</td><td>Scroll ikut posisi pasien di seri lain · garis kuning = posisi slice panel aktif</td></tr><tr><td>Tab</td><td>Pindah panel aktif (keyboard)</td></tr>
+    <tr><td>Roda mouse</td><td>Ganti slice (Ctrl + roda = zoom)</td></tr>
+    <tr><td>Klik kanan seret</td><td>Zoom &nbsp;·&nbsp; klik tengah seret = geser</td></tr>
+    <tr><td>↑ ↓ / PgUp PgDn</td><td>Ganti slice (Shift = 10 slice)</td></tr>
+    <tr><td>L · O · H</td><td>Ukur panjang · ROI bulat · densitas HU</td></tr><tr><td>S · W · G · Z · X</td><td>Scroll · W/L · Geser · Zoom · Silang</td></tr><tr><td>1 – 0</td><td>Preset window CT (1 soft tissue, 2 paru, 3 tulang, 4 mediastinum, 5 otak, 6 subdural, 7 stroke, 8 hepar, 9 CTA, 0 HRCT). MRI: 1 default, 2 auto</td></tr><tr><td>Delete</td><td>Hapus ukuran terakhir di slice aktif</td></tr><tr><td>M · B</td><td>MPR · Banding (ON/OFF)</td></tr>
+    <tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
+    <tr><td>Edit ukuran</td><td>Seret ujung garis ukur untuk mengubahnya. ROI: seret titik tengah untuk memindah, titik tepi untuk mengubah ukuran</td></tr><tr><td>Garis silang</td><td>Seret garis hijau (MPR) untuk memindah bidang lain; seret titik potongnya untuk memindah keduanya</td></tr><tr><td>HU · ROI</td><td>HU = densitas satu titik (plus rerata 3×3). ROI = lingkaran: rerata ± SD, min/maks, luas</td></tr><tr><td>Tanya Claude · K</td><td>Tandai slice aktif (K), isi pemeriksaan & klinis, lalu kirim. Claude memberi usulan temuan + draf bacaan; tombol Salin menyalin drafnya</td></tr><tr><td>Slab</td><td>MIP untuk nodul/pembuluh, MinIP untuk saluran napas</td></tr>
+    <tr><td>Simpan</td><td>Menyimpan tampilan aktif sebagai PNG tanpa nama pasien; di ponsel bisa langsung dibagikan</td></tr>
+  </table>
+  <p class="note">Hanya untuk melihat/konsultasi, bukan pengganti workstation diagnostik.</p>
+  <button id="bCloseHelp">Tutup</button>
+</div></div>
+<div id="ask" class="hide">
+  <header><b>Tanya Claude</b><button id="askClose">Tutup</button></header>
+  <div class="body">
+    <div class="rowb"><button id="askMark" class="pri">+ Tandai slice aktif</button><button id="askClearImgs">Hapus semua</button></div>
+    <div id="thumbs"></div>
+    <div class="warn" id="askCount">Belum ada slice. Pilih panel, cari slice penting, lalu tekan "Tandai slice aktif" (atau tombol K).</div>
+    <div><label>Pemeriksaan</label><input id="askExam" placeholder="mis. MSCT abdomen tanpa kontras"></div>
+    <div><label>Info klinis (opsional)</label><input id="askClin" placeholder="mis. nyeri pinggang kanan, susp. batu"></div>
+    <div class="rowb" style="flex-wrap:nowrap"><div style="flex:1"><label>Template</label><select id="askTplSel"></select></div>
+      <div style="flex:none;width:150px"><label>Kontras</label><select id="askKontras"><option value="tanpa kontras">tanpa kontras</option><option value="tanpa dan dengan kontras">tanpa dan dengan kontras</option></select></div></div>
+    <div><label>Permintaan</label><select id="askMode">
+      <option value="draft">Draf bacaan (temuan saya + slice ditandai, sisanya normal)</option>
+      <option value="find">Usulan temuan saja</option>
+      <option value="q">Pertanyaan bebas</option></select></div>
+    <div><label id="askQLab">Temuan saya (masuk ke draf; yang tidak disebut/ditandai = normal)</label><textarea id="askQ" rows="4" placeholder="mis. hepar 16,2 cm; batu ren kanan 0,5 cm (1050 HU) di calyx pole bawah; ektasis ringan PCS kanan"></textarea></div>
+    <details><summary>Lihat / ubah template terpilih (tersimpan di browser ini)</summary><textarea id="askTpl" rows="10"></textarea>
+      <button id="askTplReset" style="margin-top:4px">Kembalikan template bawaan</button></details>
+    <details><summary>Aturan umum gaya bacaan</summary><textarea id="askFmt" rows="8"></textarea>
+      <button id="askFmtReset" style="margin-top:4px">Kembalikan default</button></details>
+    <div class="rowb"><button id="askSend" class="pri">Kirim ke Claude</button><button id="askStop" class="hide">Stop</button><button id="askCopy" class="hide">Salin draf</button></div>
+    <div id="ansBox" class="hide"></div>
+    <div id="askFollow" class="hide"><label>Tanya lanjutan (teks saja; gambar tidak dikirim ulang)</label>
+      <div class="rowb" style="flex-wrap:nowrap"><input id="askF" placeholder="mis. ubah kesan, tambahkan staging"><button id="askFSend">Kirim</button></div></div>
+    <div class="warn">Nama/ID pasien tidak ikut dikirim, tetapi gambar tetap dikirim ke Claude. Hasil adalah draf AI dari slice terpilih saja — wajib diverifikasi dokter dan bukan pengganti pembacaan seluruh studi.</div>
+  </div>
+</div>
+<div id="plist" class="hide">
+  <header><b>Daftar pasien</b><button id="plClose">Tutup</button></header>
+  <div class="acts"><button id="plAddF" class="pri">+ File / zip</button><button id="plAddD">+ Folder</button></div>
+  <div id="plProg"></div>
+  <div id="plItems"></div>
+  <div class="note" style="padding:8px 10px">Hapus (×) pasien yang sudah selesai agar memori HP tetap lega.</div>
+</div>
+<div id="toast"></div>
+
+<script id="core">
+'use strict';
+/* ====================== CORE (tanpa DOM) ====================== */
+const TD = new TextDecoder('utf-8');
+const TSNAME={'1.2.840.10008.1.2.4.50':'JPEG baseline (lossy)','1.2.840.10008.1.2.4.51':'JPEG extended 12-bit','1.2.840.10008.1.2.4.57':'JPEG Lossless','1.2.840.10008.1.2.4.70':'JPEG Lossless SV1','1.2.840.10008.1.2.4.80':'JPEG-LS lossless','1.2.840.10008.1.2.4.81':'JPEG-LS near-lossless','1.2.840.10008.1.2.4.90':'JPEG2000 lossless','1.2.840.10008.1.2.4.91':'JPEG2000','1.2.840.10008.1.2.5':'RLE','1.2.840.10008.1.2.2':'Big Endian','1.2.840.10008.1.2.1.99':'Deflate'};
+const LONGVR = new Set(['OB','OD','OF','OL','OV','OW','SQ','SV','UC','UN','UR','UT','UV']);
+const TAGS = {0x00020010:'ts',0x00080016:'sop',0x00080060:'mod',0x0020000E:'serUID',0x0008103E:'serDesc',0x00200011:'serNo',
+  0x00200013:'inst',0x00280010:'rows',0x00280011:'cols',0x00280030:'ps',0x00181164:'ips',0x00180050:'thick',0x00180088:'sbs',
+  0x00200032:'ipp',0x00200037:'iop',0x00280100:'bitsA',0x00280101:'bitsS',0x00280103:'pixRep',0x00281052:'inter',0x00281053:'slope',
+  0x00281050:'wc',0x00281051:'ww',0x00280004:'photo',0x00280002:'spp',0x00280006:'planar',0x00280008:'frames',
+  0x00100010:'patName',0x0020000D:'studyUID',0x00080018:'sopUID',0x00180081:'te',0x00189082:'te2',0x00080008:'imgType',0x00100020:'patId',0x00080020:'studyDate',0x00081030:'studyDesc',0x00100040:'sex',0x00101010:'age'};
+const USTAGS = new Set([0x00280010,0x00280011,0x00280100,0x00280101,0x00280103,0x00280002,0x00280006]);
+const SKIP_SOP = /^1\.2\.840\.10008\.5\.1\.4\.1\.1\.(66|88|104|481|9)\b/;
+const OK_TS = new Set(['1.2.840.10008.1.2','1.2.840.10008.1.2.1']);
+
+function str(u8,p,len){ let e=p+len; while(e>p&&(u8[e-1]===0||u8[e-1]===32))e--; let s=p; while(s<e&&u8[s]===32)s++; return TD.decode(u8.subarray(s,e)); }
+function hdrAt(dv,u8,p,ex){
+  const g=dv.getUint16(p,true);
+  if(g===0xFFFE) return [dv.getUint32(p+4,true),8];
+  if(ex){ const vr=String.fromCharCode(u8[p+4],u8[p+5]);
+    if(LONGVR.has(vr)) return [dv.getUint32(p+8,true),12];
+    return [dv.getUint16(p+6,true),8]; }
+  return [dv.getUint32(p+4,true),8];
+}
+function skipUndef(dv,u8,p,L,ex){
+  while(p+8<=L){
+    const g=dv.getUint16(p,true),e=dv.getUint16(p+2,true),len=dv.getUint32(p+4,true); p+=8;
+    if(g===0xFFFE&&e===0xE0DD) return p;
+    if(g===0xFFFE&&e===0xE000){ p = len===0xFFFFFFFF ? skipItem(dv,u8,p,L,ex) : p+len; continue; }
+    return L;
+  }
+  return L;
+}
+function skipItem(dv,u8,p,L,ex){
+  while(p+8<=L){
+    const g=dv.getUint16(p,true),e=dv.getUint16(p+2,true);
+    if(g===0xFFFE){ const len=dv.getUint32(p+4,true); p+=8; if(e===0xE00D) return p; if(len!==0xFFFFFFFF) p+=len; continue; }
+    const [len,h]=hdrAt(dv,u8,p,ex); p+=h;
+    p = len===0xFFFFFFFF ? skipUndef(dv,u8,p,L,ex) : p+len;
+  }
+  return L;
+}
+/* Baca isi sequence (untuk Enhanced/multi-frame: Functional Groups) — tag dari sequence bersarang diratakan */
+function collectItems(dv,u8,p,L,ex,len){
+  const end = len===0xFFFFFFFF ? L : Math.min(L,p+len), items=[];
+  while(p+8<=end){
+    const g=dv.getUint16(p,true),e=dv.getUint16(p+2,true),il=dv.getUint32(p+4,true); p+=8;
+    if(g===0xFFFE&&e===0xE0DD) return [p,items];
+    if(g!==0xFFFE||e!==0xE000) return [end,items];
+    const o={}; p=collectDS(dv,u8,p, il===0xFFFFFFFF?L:Math.min(L,p+il), L, ex, o); items.push(o);
+  }
+  return [len===0xFFFFFFFF?p:end, items];
+}
+function collectDS(dv,u8,p,end,L,ex,o){
+  while(p+8<=end){
+    const g=dv.getUint16(p,true), e=dv.getUint16(p+2,true);
+    if(g===0xFFFE){ p+=8; if(e===0xE00D) return p; continue; }
+    const tag=((g<<16)|e)>>>0, isSQ = ex && u8[p+4]===83 && u8[p+5]===81;
+    const [len,h]=hdrAt(dv,u8,p,ex); p+=h;
+    if(len===0xFFFFFFFF || isSQ){ const [np,its]=collectItems(dv,u8,p,L,ex,len); for(const it of its) for(const k in it) if(!(k in o)) o[k]=it[k]; p=np; continue; }
+    const nm=TAGS[tag]; if(nm && p+len<=L) o[nm]= USTAGS.has(tag) ? (len>=2?dv.getUint16(p,true):0) : str(u8,p,len);
+    p+=len;
+  }
+  return end;
+}
+function parseDicom(buf){
+  const L=buf.byteLength; if(L<16) return null;
+  const dv=new DataView(buf), u8=new Uint8Array(buf);
+  let p=0;
+  const isVR=q=>{const a=u8[q+4],b=u8[q+5];return a>=65&&a<=90&&b>=65&&b<=90;};
+  if(L>136&&u8[128]===68&&u8[129]===73&&u8[130]===67&&u8[131]===77) p=132;
+  else { const g=dv.getUint16(0,true); if(g!==2&&g!==8) return null; }
+  const t={}; let explicit = p===132 ? true : isVR(0), meta=true;
+  while(p+8<=L){
+    const g=dv.getUint16(p,true), e=dv.getUint16(p+2,true), tag=((g<<16)|e)>>>0;
+    if(meta&&g!==2){ meta=false;
+      if(t.ts){ if(t.ts==='1.2.840.10008.1.2') explicit=false; else if(t.ts==='1.2.840.10008.1.2.2'||t.ts==='1.2.840.10008.1.2.1.99'){t._bad=t.ts;return t;} else explicit=true; }
+      else explicit=isVR(p);
+    }
+    const ex = g===2 ? true : explicit;
+    const [len,h]=hdrAt(dv,u8,p,ex); p+=h;
+    if(tag===0x7FE00010){ t._pix=p; t._pixLen=len; t._encap = len===0xFFFFFFFF; break; }
+    if(tag===0x52009229||tag===0x52009230){ const [np,its]=collectItems(dv,u8,p,L,ex,len); if(tag===0x52009229) t._shared=its[0]; else t._pf=its; p=np; continue; }
+    if(len===0xFFFFFFFF){ p=skipUndef(dv,u8,p,L,ex); continue; }
+    const nm=TAGS[tag];
+    if(nm && p+len<=L) t[nm] = USTAGS.has(tag) ? (len>=2?dv.getUint16(p,true):0) : str(u8,p,len);
+    p+=len;
+  }
+  return t;
+}
+const nums = s => (s==null||s==='') ? null : String(s).split('\\').map(Number);
+const num1 = (s,d) => { const a=nums(s); return a&&isFinite(a[0])?a[0]:d; };
+
+/* ---------- Decoder kompresi DICOM (JPEG Lossless proses 14 & RLE) ---------- */
+const TS_LOSSLESS=new Set(['1.2.840.10008.1.2.4.57','1.2.840.10008.1.2.4.70']), TS_RLE='1.2.840.10008.1.2.5';
+function encapFrames(u8,p,nF){
+  const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength), L=u8.length, frags=[]; let bot=null, first=true;
+  while(p+8<=L){
+    const g=dv.getUint16(p,true), e=dv.getUint16(p+2,true), len=dv.getUint32(p+4,true); p+=8;
+    if(g===0xFFFE&&e===0xE0DD) break;
+    if(g!==0xFFFE||e!==0xE000) break;
+    const seg=u8.subarray(p,Math.min(L,p+len)); p+=len;
+    if(first){ first=false; if(len){ bot=[]; for(let i=0;i+4<=len;i+=4) bot.push(dv.getUint32(seg.byteOffset-u8.byteOffset+i,true)); } continue; }
+    frags.push(seg);
+  }
+  const cat=list=>{ if(list.length===1) return list[0]; let n=0; for(const f of list) n+=f.length; const o=new Uint8Array(n); let q=0; for(const f of list){ o.set(f,q); q+=f.length; } return o; };
+  if(nF<=1) return [cat(frags)];
+  if(frags.length===nF) return frags;
+  const all=cat(frags);
+  if(bot&&bot.length===nF){ const out=[]; for(let i=0;i<nF;i++) out.push(all.subarray(bot[i], i+1<nF?bot[i+1]:all.length)); return out; }
+  const out=[]; let s=-1; for(let i=0;i+1<all.length;i++){ if(all[i]===0xFF&&all[i+1]===0xD8&&s<0) s=i; else if(all[i]===0xFF&&all[i+1]===0xD9&&s>=0){ out.push(all.subarray(s,i+2)); s=-1; } }
+  return out;
+}
+function buildHuff(bits,vals){
+  // tabel lookup 16-bit: index = 16 bit berikutnya, isi = (panjang<<8)|nilai
+  const lut=new Uint16Array(65536); let code=0,k=0;
+  for(let l=1;l<=16;l++){ for(let i=0;i<bits[l-1];i++){ const v=vals[k++], sh=16-l, base=code<<sh, n=1<<sh; for(let j=0;j<n;j++) lut[base+j]=(l<<8)|v; code++; } code<<=1; }
+  return lut;
+}
+function decodeJpegLossless(d){
+  let p=0; const L=d.length; const huff={}; let P=16,Y=0,X=0,Nf=1,Ri=0,Ss=1,Pt=0,tbl=0, comps=[];
+  const u16=q=>(d[q]<<8)|d[q+1];
+  if(u16(0)!==0xFFD8) throw new Error('bukan JPEG');
+  p=2;
+  while(p<L){
+    if(d[p]!==0xFF){ p++; continue; }
+    const m=d[p+1]; p+=2;
+    if(m===0xD8||m===0x01||(m>=0xD0&&m<=0xD7)) continue;
+    if(m===0xD9) break;
+    const len=u16(p), seg=p+2, end=p+len;
+    if(m===0xC3||m===0xC7){ P=d[seg]; Y=u16(seg+1); X=u16(seg+3); Nf=d[seg+5]; comps=[]; for(let i=0;i<Nf;i++) comps.push({id:d[seg+6+i*3]}); }
+    else if(m>=0xC0&&m<=0xCF&&m!==0xC4&&m!==0xC8&&m!==0xCC) throw new Error('JPEG non-lossless (SOF '+m.toString(16)+')');
+    else if(m===0xC4){ let q=seg; while(q<end){ const tc=d[q]>>4, th=d[q]&15; const bits=d.subarray(q+1,q+17); let n=0; for(let i=0;i<16;i++) n+=bits[i]; huff[(tc<<4)|th]=buildHuff(bits,d.subarray(q+17,q+17+n)); q+=17+n; } }
+    else if(m===0xDD){ Ri=u16(seg); }
+    else if(m===0xDA){
+      const Ns=d[seg]; if(Ns!==1||Nf!==1) throw new Error('JPEG lossless multi-komponen belum didukung');
+      tbl=d[seg+2]>>4; Ss=d[seg+1+Ns*2]; Pt=d[seg+3+Ns*2]&15;
+      return scan(end);
+    }
+    p=end;
+  }
+  throw new Error('JPEG tanpa SOS');
+  function scan(q){
+    const lut=huff[tbl]; if(!lut) throw new Error('tabel Huffman hilang');
+    const out=new Uint16Array(X*Y), mask=(1<<P)-1, init=1<<(P-Pt-1);
+    let bitbuf=0, nb=0, pos=q, marker=false;
+    const fill=()=>{ while(nb<=24){ let b=0; if(!marker&&pos<L){ b=d[pos++]; if(b===0xFF){ const b2=d[pos]; if(b2===0){ pos++; } else { marker=true; pos--; b=0; } } } bitbuf=(bitbuf<<8)|b; nb+=8; } };
+    const restart=()=>{ nb=0; bitbuf=0; marker=false; while(pos<L-1&&!(d[pos]===0xFF&&d[pos+1]>=0xD0&&d[pos+1]<=0xD7)) pos++; pos+=2; };
+    let cnt=0, rowStart=true, fresh=true;
+    for(let y=0;y<Y;y++){
+      for(let x=0;x<X;x++){
+        if(Ri&&cnt===Ri){ restart(); cnt=0; rowStart=true; fresh=true; }
+        if(nb<16) fill();
+        const e=lut[(bitbuf>>>(nb-16))&0xFFFF], l=e>>8, s=e&0xFF; nb-=l;
+        let diff=0;
+        if(s===16) diff=32768;
+        else if(s){ if(nb<s) fill(); const v=(bitbuf>>>(nb-s))&((1<<s)-1); nb-=s; diff = v<(1<<(s-1)) ? v-(1<<s)+1 : v; }
+        const i=y*X+x; let pr;
+        if(fresh){ pr=init; fresh=false; }
+        else if(y===0||rowStart) pr = x===0 ? out[i-X] : out[i-1];
+        else if(x===0) pr=out[i-X];
+        else { const a=out[i-1], b=out[i-X], c=out[i-X-1];
+          switch(Ss){ case 1: pr=a; break; case 2: pr=b; break; case 3: pr=c; break; case 4: pr=a+b-c; break; case 5: pr=a+((b-c)>>1); break; case 6: pr=b+((a-c)>>1); break; default: pr=(a+b)>>1; } }
+        out[i]=(pr+diff)&mask; cnt++;
+      }
+      rowStart=false;
+    }
+    if(Pt) for(let i=0;i<out.length;i++) out[i]<<=Pt;
+    return out;
+  }
+}
+function decodeRLE(seg,rows,cols,bitsA,spp){
+  const dv=new DataView(seg.buffer,seg.byteOffset,seg.byteLength), nS=dv.getUint32(0,true), offs=[]; for(let i=0;i<nS;i++) offs.push(dv.getUint32(4+i*4,true));
+  const npx=rows*cols, bpp=bitsA>>3, out=new Uint8Array(npx*bpp*spp);
+  for(let s=0;s<nS;s++){
+    const st=offs[s], en=s+1<nS?offs[s+1]:seg.length, plane=new Uint8Array(npx); let p=st,o=0;
+    while(p<en&&o<npx){ const n=(seg[p]<<24)>>24; p++; if(n>=0){ for(let k=0;k<=n&&o<npx;k++) plane[o++]=seg[p++]; } else if(n>-128){ const v=seg[p++]; for(let k=0;k<1-n&&o<npx;k++) plane[o++]=v; } }
+    // segmen: per sample, byte paling signifikan dulu
+    const sample=Math.floor(s/bpp), byte=bpp-1-(s%bpp);
+    if(spp===1){ for(let i=0;i<npx;i++) out[i*bpp+byte]=plane[i]; }
+    else { for(let i=0;i<npx;i++) out[sample*npx+i]=plane[i]; }
+  }
+  return out.buffer;
+}
+/* Ubah pixel data terkompresi menjadi frame tak terkompresi (ArrayBuffer per frame) */
+function decodeFrames(t,raw){
+  const u8=new Uint8Array(raw), nF=Math.max(1,parseInt(t.frames)||1), frames=encapFrames(u8,t._pix,nF);
+  if(TS_LOSSLESS.has(t.ts)) return frames.map(f=>decodeJpegLossless(f).buffer);
+  if(t.ts===TS_RLE) return frames.map(f=>decodeRLE(f,t.rows,t.cols,t.bitsA||16,t.spp||1));
+  return null;
+}
+
+/* Ubah satu file DICOM jadi daftar slice (multi-frame -> beberapa slice) */
+function toSlices(t,buf,ds){
+  const rows=t.rows, cols=t.cols; if(!rows||!cols||t._pix==null) return [];
+  const bitsA=t.bitsA||16, spp=t.spp||1, signed=t.pixRep===1, bitsS=t.bitsS||bitsA;
+  const nF=Math.max(1,parseInt(t.frames)||1), npx=rows*cols, fb=npx*spp*(bitsA>>3);
+  const ps0 = nums(t.ps)||nums(t.ips);
+  const base = {serUID:t.serUID||'?', serNo:parseInt(t.serNo)||0, serDesc:t.serDesc||'', mod:t.mod||'', inst:parseInt(t.inst)||0,
+    grp: nF>1 ? (t.sopUID||String(Math.random())) : '', imgType:t.imgType||'',
+    te:num1(t.te,null), studyUID:t.studyUID||'',
+    photo:t.photo||'MONOCHROME2', pat:{name:(t.patName||'').replace(/\^/g,' ').trim(), id:t.patId||'', date:t.studyDate||'', desc:t.studyDesc||'', sex:t.sex||'', age:t.age||''}};
+  const out=[];
+  for(let f=0; f<nF; f++){
+    const dec=t._dec?t._dec[f]:null; if(t._dec&&!dec) break;
+    const off= dec?0 : t._pix+f*fb; if(!dec && off+fb>buf.byteLength) break;
+    const fr=Object.assign({}, t._shared||{}, (t._pf&&t._pf[f])||{}), G=k=>fr[k]!=null?fr[k]:t[k];
+    const ps=nums(fr.ps)||ps0||[1,1];
+    Object.assign(base,{te:num1(G('te2'),null)??num1(G('te'),null)??base.te, ipp:nums(G('ipp')), iop:nums(G('iop')), thick:num1(G('thick'),null), sbs:num1(G('sbs'),null), wc:num1(G('wc'),null), ww:num1(G('ww'),null)});
+    if(spp===3){
+      const src=new Uint8Array(dec||buf,off,npx*3), d=new Uint8Array(npx*3);
+      if(t.planar===1){ for(let i=0;i<npx;i++){d[i*3]=src[i];d[i*3+1]=src[npx+i];d[i*3+2]=src[2*npx+i];} } else d.set(src);
+      out.push(Object.assign({}, base, {rows, cols, ps:[ps[0],ps[1]], rgb:true, data:d, frame:f})); continue;
+    }
+    let src;
+    const ab = dec ? dec : (off%(bitsA>>3)===0) ? buf : buf.slice(off, off+fb), o2 = (ab===buf)?off:0;
+    if(bitsA===16) src = signed ? new Int16Array(ab,o2,npx) : new Uint16Array(ab,o2,npx);
+    else if(bitsA===8) src = signed ? new Int8Array(ab,o2,npx) : new Uint8Array(ab,o2,npx);
+    else if(bitsA===32) src = signed ? new Int32Array(ab,o2,npx) : new Uint32Array(ab,o2,npx);
+    else continue;
+    const slope=num1(G('slope'),1), inter=num1(G('inter'),0);
+    const intOK = Number.isInteger(slope)&&Number.isInteger(inter);
+    const mask = (!signed && bitsS<bitsA && bitsA<=16) ? (1<<bitsS)-1 : 0;
+    const sh = (signed && bitsS<bitsA && bitsA===16) ? 32-bitsS : 0;
+    const r2=Math.floor(rows/ds), c2=Math.floor(cols/ds);
+    const d = intOK ? new Int16Array(r2*c2) : new Float32Array(r2*c2);
+    const rd = i => { let v=src[i]; if(mask) v&=mask; else if(sh) v=(v<<sh)>>sh; return v*slope+inter; };
+    if(ds===1){
+      if(intOK){ for(let i=0;i<npx;i++){ let v=rd(i); d[i]= v>32767?32767:v<-32768?-32768:v; } }
+      else for(let i=0;i<npx;i++) d[i]=rd(i);
+    } else {
+      const inv=1/(ds*ds);
+      for(let y=0;y<r2;y++) for(let x=0;x<c2;x++){ let s=0;
+        for(let b=0;b<ds;b++){ const rr=(y*ds+b)*cols+x*ds; for(let a=0;a<ds;a++) s+=rd(rr+a); }
+        let v=s*inv; if(intOK){ v=Math.round(v); v= v>32767?32767:v<-32768?-32768:v; } d[y*c2+x]=v; }
+    }
+    out.push(Object.assign({}, base, {rows:r2, cols:c2, ps:[ps[0]*ds, ps[1]*ds], rgb:false, data:d, frame:f, ds}));
+  }
+  return out;
+}
+
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+function domAxis(v){ const a=v.map(Math.abs); const i=a[0]>=a[1]&&a[0]>=a[2]?0:a[1]>=a[2]?1:2; return [i, v[i]>=0?1:-1]; }
+
+/* Kelompokkan slice menjadi seri/volume */
+function buildSeries(slices){
+  const g=new Map();
+  for(const s of slices){
+    const io = s.iop&&s.iop.length===6 ? s.iop.map(v=>Math.round(v*50)/50).join(',') : 'x';
+    const k = s.grp ? s.serUID+'|'+s.grp : s.serUID+'|'+s.rows+'x'+s.cols+'|'+io+'|'+(s.rgb?1:0);
+    if(!g.has(k)) g.set(k,[]); g.get(k).push(s);
+  }
+  const res=[];
+  for(const [k,list] of g){
+    const f=list[0];
+    let r=[1,0,0], c=[0,1,0], geom=false;
+    if(f.iop&&f.iop.length===6&&f.iop.every(isFinite)){ r=f.iop.slice(0,3); c=f.iop.slice(3); geom=true;
+      if(list.some(s=>!s.iop||s.iop.some((v,i)=>Math.abs(v-f.iop[i])>0.05))) geom=false; }
+    const n=cross(r,c);
+    const havePos = geom && list.every(s=>s.ipp&&s.ipp.length===3);
+    if(!havePos) geom=false;
+    for(const s of list) s._k = havePos ? dot(s.ipp,n) : (s.inst*1000+s.frame);
+    list.sort((a,b)=>a._k-b._k);
+    const kept=[list[0]], diffs=[];
+    for(let i=1;i<list.length;i++){ const d=list[i]._k-kept[kept.length-1]._k; if(havePos && Math.abs(d)<1e-3) continue; kept.push(list[i]); if(havePos) diffs.push(d); }
+    diffs.sort((a,b)=>a-b);
+    let dz = diffs.length ? diffs[diffs.length>>1] : 0;
+    if(!(dz>0)) dz = f.sbs||f.thick||1;
+    const ax=[domAxis(r),domAxis(c),domAxis(n)];
+    const perm = new Set(ax.map(a=>a[0])).size===3;
+    res.push({ key:k, uid:f.serUID, no:f.serNo, desc:f.serDesc||('Seri '+f.serNo), mod:f.mod, rgb:f.rgb,
+      dim:[f.cols,f.rows,kept.length], sp:[f.ps[1],f.ps[0],dz], slices:kept.map(s=>s.data),
+      r, c, n, origin: havePos?kept[0].ipp:null, geom: geom&&perm&&havePos, ax, imgType:f.imgType, te:f.te, study: f.studyUID || ((f.pat.id||'')+'|'+(f.pat.name||'')+'|'+(f.pat.date||'')),
+      wc:f.wc, ww:f.ww, invert:f.photo==='MONOCHROME1', thick:f.thick, pat:f.pat, ds:f.ds||1, meas:[] });
+  }
+  res.sort((a,b)=>a.no-b.no||b.dim[2]-a.dim[2]);
+  const cnt={}; for(const s of res) cnt[s.uid]=(cnt[s.uid]||0)+1;
+  const lab=s=>{ const it=(s.imgType||'').split('\\').slice(2).filter(x=>x&&x!=='NONE'&&x!=='M').join('/'); return it||''; };
+  const seen={}; for(const s of res) if(cnt[s.uid]>1){
+    const sib=res.filter(x=>x.uid===s.uid); let L=lab(s);
+    if(sib.filter(x=>lab(x)===L).length>1 && s.te!=null && new Set(sib.map(x=>x.te)).size>1) L=(L?L+' ':'')+'TE '+(+s.te).toFixed(1);
+    if(sib.filter(x=>lab(x)===lab(s)).length>1 && !/TE /.test(L)){ seen[s.uid+L]=(seen[s.uid+L]||0)+1; L=(L?L+' ':'')+'#'+seen[s.uid+L]; }
+    if(L) s.desc+=' ['+L+']'; }
+  return res;
+}
+
+/* Definisi tampilan: sumbu pasien (0=x kiri, 1=y belakang, 2=z atas) */
+const VIEWDEF = {
+  ax :{name:'Aksial', n:[2,-1], u:[0,1], v:[1,1],  lab:['R','L','A','P']},
+  cor:{name:'Koronal',n:[1,1],  u:[0,1], v:[2,-1], lab:['R','L','S','I']},
+  sag:{name:'Sagital',n:[0,1],  u:[1,1], v:[2,-1], lab:['A','P','S','I']}};
+function nativeView(S){ if(!S.geom) return 'ax'; const p=S.ax[2][0]; return p===2?'ax':p===1?'cor':'sag'; }
+function viewMap(S,key){
+  if(!S.geom){ if(key!=='ax') return null; return {aU:0,fU:false,aV:1,fV:false,aN:2,fN:false,lab:null}; }
+  const D=VIEWDEF[key];
+  const f = ([pa,sg]) => { const a=S.ax.findIndex(x=>x[0]===pa); return [a, S.ax[a][1]!==sg]; };
+  const [aU,fU]=f(D.u), [aV,fV]=f(D.v), [aN,fN]=f(D.n);
+  if(S.dim[aU]<2&&S.dim[aV]<2) return null;
+  if(aN!==2 && (S.dim[2]<2 || S.rgb)) return null;
+  return {aU,fU,aV,fV,aN,fN,lab:D.lab};
+}
+/* Hitung bidang (plane) dengan slab opsional; hasil Float32Array nu*nv */
+function computePlane(S,m,pos,half,mode){
+  const nu=S.dim[m.aU], nv=S.dim[m.aV], N=S.dim[m.aN], cols=S.dim[0], sl=S.slices;
+  const out=new Float32Array(nu*nv), c=[0,0,0];
+  const lo=Math.max(0,pos-half), hi=Math.min(N-1,pos+half), cnt=hi-lo+1;
+  const uIdx=new Int32Array(nu), vIdx=new Int32Array(nv);
+  for(let u=0;u<nu;u++) uIdx[u]=m.fU?nu-1-u:u;
+  for(let v=0;v<nv;v++) vIdx[v]=m.fV?nv-1-v:v;
+  for(let t=lo;t<=hi;t++){
+    c[m.aN]=t; const first=t===lo;
+    for(let v=0;v<nv;v++){ c[m.aV]=vIdx[v]; const row=v*nu;
+      for(let u=0;u<nu;u++){ c[m.aU]=uIdx[u];
+        const val=sl[c[2]][c[1]*cols+c[0]], o=row+u;
+        if(first) out[o]=val;
+        else if(mode==='max'){ if(val>out[o]) out[o]=val; }
+        else if(mode==='min'){ if(val<out[o]) out[o]=val; }
+        else out[o]+=val;
+      }
+    }
+  }
+  if(mode==='avg'&&cnt>1) for(let i=0;i<out.length;i++) out[i]/=cnt;
+  return out;
+}
+/* Koordinat pasien (mm) dari indeks volume */
+function patPos(S,i,j,k){
+  if(!S.origin) return null;
+  const o=S.origin, a=i*S.sp[0], b=j*S.sp[1], d=k*S.sp[2];
+  return [0,1,2].map(x=>o[x]+a*S.r[x]+b*S.c[x]+d*S.n[x]);
+}
+
+/* ---------- ZIP (stored / deflate, zip64) ---------- */
+async function zipEntries(file){
+  const tl=Math.min(file.size,65557+22), tail=new DataView(await file.slice(file.size-tl).arrayBuffer());
+  let e=-1; for(let i=tl-22;i>=0;i--) if(tail.getUint32(i,true)===0x06054b50){e=i;break;}
+  if(e<0) throw new Error('File zip rusak atau bukan zip');
+  let cnt=tail.getUint16(e+10,true), cdSize=tail.getUint32(e+12,true), cdOff=tail.getUint32(e+16,true);
+  if(cdOff===0xFFFFFFFF||cnt===0xFFFF||cdSize===0xFFFFFFFF){
+    const lp=e-20; if(lp>=0&&tail.getUint32(lp,true)===0x07064b50){
+      const z64=Number(tail.getBigUint64(lp+8,true)), zd=new DataView(await file.slice(z64,z64+56).arrayBuffer());
+      cnt=Number(zd.getBigUint64(32,true)); cdSize=Number(zd.getBigUint64(40,true)); cdOff=Number(zd.getBigUint64(48,true)); }
+  }
+  const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()), u8=new Uint8Array(cd.buffer);
+  const out=[]; let p=0;
+  while(p+46<=cd.byteLength && cd.getUint32(p,true)===0x02014b50){
+    const flag=cd.getUint16(p+8,true), method=cd.getUint16(p+10,true);
+    let csize=cd.getUint32(p+20,true), usize=cd.getUint32(p+24,true);
+    const nl=cd.getUint16(p+28,true), xl=cd.getUint16(p+30,true), cl=cd.getUint16(p+32,true);
+    let off=cd.getUint32(p+42,true);
+    const name=TD.decode(u8.subarray(p+46,p+46+nl));
+    let x=p+46+nl; const xe=x+xl;
+    while(x+4<=xe){ const id=cd.getUint16(x,true), sz=cd.getUint16(x+2,true);
+      if(id===1){ let q=x+4;
+        if(usize===0xFFFFFFFF){usize=Number(cd.getBigUint64(q,true));q+=8;}
+        if(csize===0xFFFFFFFF){csize=Number(cd.getBigUint64(q,true));q+=8;}
+        if(off===0xFFFFFFFF){off=Number(cd.getBigUint64(q,true));} }
+      x+=4+sz; }
+    out.push({name,method,csize,usize,off,enc:!!(flag&1)});
+    p=xe+cl;
+  }
+  return out;
+}
+async function zipRead(file,e){
+  if(e.enc) throw new Error('zip terenkripsi');
+  const lh=new DataView(await file.slice(e.off,e.off+30).arrayBuffer());
+  const st=e.off+30+lh.getUint16(26,true)+lh.getUint16(28,true), blob=file.slice(st,st+e.csize);
+  if(e.method===0) return blob.arrayBuffer();
+  if(e.method===8) return new Response(blob.stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  throw new Error('metode kompresi zip '+e.method);
+}
+const skipName = n => /(^|\/)(__MACOSX\/|\._)|\.DS_Store$|(^|\/)DICOMDIR$|\.(txt|xml|pdf|jpe?g|png|html?|exe|ini|inf|json|csv)$/i.test(n) || n.endsWith('/');
+
+/* Muat semua input -> daftar seri (paralel dengan Web Worker bila tersedia) */
+async function inflateRaw(u8){ return new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer(); }
+function processRaw(raw, ds){
+  const t=parseDicom(raw);
+  if(!t) return {k:'other'};
+  const canDec = t._encap && t._pix!=null && (TS_LOSSLESS.has(t.ts)||t.ts===TS_RLE);
+  if(!canDec && (t._bad||(t.ts&&!OK_TS.has(t.ts))||t._encap)) return {k:(t._pix!=null||t._bad)?'compressed':'other', ts:t._bad||t.ts||'?'};
+  if(t._pix==null||SKIP_SOP.test(t.sop||'')) return {k:'other'};
+  if(ds==null) return {k:'hdr', rows:t.rows, cols:t.cols};
+  if(canDec){ t._dec=decodeFrames(t,raw); if(t.ts===TS_RLE&&t.spp===3) t.planar=1; }
+  return {k:'img', slices:toSlices(t,raw,(t.rows<=256||t.spp===3)?1:ds)};
+}
+if(typeof WorkerGlobalScope!=='undefined' && typeof self!=='undefined' && self instanceof WorkerGlobalScope){
+  self.onmessage=async e=>{ const d=e.data; if(d.ping){ self.postMessage({pong:1}); return; }
+    try{ const raw = d.method===8 ? await inflateRaw(new Uint8Array(d.buf)) : d.buf; const r=processRaw(raw,d.ds);
+      self.postMessage({id:d.id,r}, r.slices? r.slices.map(s=>s.data.buffer) : []); }
+    catch(err){ self.postMessage({id:d.id,r:{k:'err',msg:String(err&&err.message||err)}}); } };
+}
+function entryStart(dv,e){ return e.off+30+dv.getUint16(e.off+26,true)+dv.getUint16(e.off+28,true); }
+async function makeWorkers(n,src){
+  if(!src||typeof Worker==='undefined'||n<1) return [];
+  let url; try{ url=URL.createObjectURL(new Blob([src],{type:'text/javascript'})); }catch(e){ return []; }
+  const ws=[];
+  for(let i=0;i<n;i++){ try{ ws.push(new Worker(url)); }catch(e){ break; } }
+  const ok=await Promise.all(ws.map(w=>new Promise(r=>{ const to=setTimeout(()=>r(false),3000); w.onmessage=()=>{clearTimeout(to);r(true);}; w.onerror=()=>{clearTimeout(to);r(false);}; w.postMessage({ping:1}); })));
+  const good=ws.filter((w,i)=>ok[i]); ws.filter((w,i)=>!ok[i]).forEach(w=>w.terminate());
+  return good;
+}
+async function loadAll(files, onProg, opts={}){
+  const tasks=[];
+  for(const f of files){
+    const head=new Uint8Array(await f.slice(0,4).arrayBuffer());
+    if(head[0]===0x50&&head[1]===0x4B&&head[2]===3&&head[3]===4){
+      const ents=(await zipEntries(f)).filter(e=>!skipName(e.name)&&e.usize>=132);
+      if(ents.some(e=>e.enc)) throw new Error('zip terenkripsi (berpassword) belum didukung');
+      let whole=null;
+      if(f.size <= (opts.wholeMax||1.2e9)){ try{ whole=await f.arrayBuffer(); }catch(e){ whole=null; } }
+      const dv = whole ? new DataView(whole) : null;
+      for(const e of ents) tasks.push({ getBuf: whole
+        ? async()=>{ const s=entryStart(dv,e); return {buf:whole.slice(s,s+e.csize), method:e.method}; }
+        : async()=>{ const lh=new DataView(await f.slice(e.off,e.off+30).arrayBuffer()); const s=e.off+30+lh.getUint16(26,true)+lh.getUint16(28,true);
+            return {buf:await f.slice(s,s+e.csize).arrayBuffer(), method:e.method}; } });
+    } else if(!skipName(f.webkitRelativePath||f.name) && f.size>=132) tasks.push({ getBuf: async()=>({buf:await f.arrayBuffer(), method:0}) });
+  }
+  for(const t of tasks) if(false) t;
+  const st={files:tasks.length,img:0,compressed:0,other:0,err:0}, slices=[];
+  const N=tasks.length; let done=0, ds=null, i=0;
+  const prog=()=>{ if(onProg && (done%6===0||done===N)) onProg(done,N); };
+  const handle=r=>{ if(r.k==='compressed'){ st.tsc=st.tsc||{}; st.tsc[r.ts]=(st.tsc[r.ts]||0)+1; } if(r.k==='img'){ for(const s of r.slices) slices.push(s); st.img+=r.slices.length; } else if(r.k==='compressed') st.compressed++; else if(r.k==='err') st.err++; else st.other++; done++; prog(); };
+  const runLocal=async ti=>{ try{ const {buf,method}=await tasks[ti].getBuf(); const raw= method===8? await inflateRaw(new Uint8Array(buf)) : method===0? buf : (()=>{throw new Error('metode zip '+method)})();
+      let r=processRaw(raw, ds==null?null:ds);
+      if(r.k==='hdr'){ ds=1; if(!opts.full){ const est=N*r.rows*r.cols*2; while(est/(ds*ds)>opts.budget && ds<4) ds*=2; } r=processRaw(raw,ds); }
+      return r; }catch(err){ console.warn(err); return {k:'err'}; } };
+  // tentukan faktor resolusi dari gambar pertama (di thread utama)
+  while(i<N && ds==null){ handle(await runLocal(i++)); if(onProg) await onProg(done,N); }
+  const nW = Math.min(8, Math.max(1,(navigator.hardwareConcurrency||4)-1));
+  const workers = i<N ? await makeWorkers(nW, opts.coreSrc) : [];
+  if(workers.length){
+    await new Promise(resolve=>{
+      let inflight=0, idc=0;
+      const feed=async w=>{
+        if(i>=N){ if(inflight===0) resolve(); return; }
+        const ti=i++; inflight++;
+        let b; try{ b=await tasks[ti].getBuf(); }catch(e){ inflight--; handle({k:'err'}); feed(w); return; }
+        if(b.method!==0&&b.method!==8){ inflight--; handle({k:'err'}); feed(w); return; }
+        w.postMessage({id:idc++, buf:b.buf, method:b.method, ds}, [b.buf]);
+      };
+      for(const w of workers){
+        w.onmessage=e=>{ if(e.data.pong) return; inflight--; handle(e.data.r); feed(w); };
+        w.onerror=e=>{ e.preventDefault&&e.preventDefault(); inflight--; handle({k:'err'}); feed(w); };
+        feed(w); feed(w);
+      }
+    });
+    workers.forEach(w=>w.terminate());
+  } else {
+    while(i<N){ handle(await runLocal(i++)); if(onProg && done%8===0) await onProg(done,N); }
+  }
+  st.ds=ds||1; st.workers=workers.length;
+  return {series:buildSeries(slices), stats:st};
+}
+if(typeof module!=='undefined') module.exports={parseDicom,toSlices,buildSeries,viewMap,computePlane,nativeView,zipEntries,zipRead,loadAll,patPos,VIEWDEF};
+</script>
+
+<script>
+'use strict';
+/* ====================== UI ====================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const PRESETS=[
+  {k:'1',name:'Soft tissue',wc:40,ww:400},{k:'2',name:'Paru (lung)',wc:-600,ww:1500},{k:'3',name:'Tulang (bone)',wc:500,ww:2000},
+  {k:'4',name:'Mediastinum',wc:50,ww:350},{k:'5',name:'Otak (brain)',wc:40,ww:80},{k:'6',name:'Subdural',wc:80,ww:200},
+  {k:'7',name:'Stroke',wc:40,ww:40},{k:'8',name:'Hepar',wc:60,ww:160},{k:'9',name:'CTA',wc:300,ww:700},{k:'0',name:'HRCT temporal',wc:700,ww:4000}];
+const GREEN='#39d353', REF='#f2c14e', MEAS='#5ff2c8';
+const isTouch = matchMedia('(pointer:coarse)').matches;
+const st={ series:[], vps:[], nv:0, mode:'mpr', grid:'1x2', active:0, max:-1,
+  tool:isTouch?'scroll':'wl', cross:true, ref:true, sync:true, showId:true, slab:{mm:0,mode:''}, hover:null };
+const portrait=()=>innerHeight>innerWidth*1.05;
+function toast(t,ms=2200){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>e.classList.remove('show'),ms); }
+const AV=()=>st.vps[st.active];
+const nVec=(S,a)=>[S.r,S.c,S.n][a];
+
+/* ---------- seri & window ---------- */
+function initSeries(S){ if(S._init) return; S._init=true; S.cur=[S.dim[0]>>1,S.dim[1]>>1,S.dim[2]>>1]; S.meas=[]; setWinS(S,'def'); }
+function setWinS(S,val){
+  S.wlName=val;
+  if(S.rgb){ S.wl={wc:128,ww:256}; return; }
+  if(val==='def'){ if(S.wc!=null&&S.ww>0){ S.wl={wc:S.wc,ww:S.ww}; return; } if(S.mod==='CT'){ S.wl={wc:40,ww:400}; return; } val='auto'; S.wlName='auto'; }
+  if(val==='auto'){ const k=nativeView(S), m=viewMap(S,k); const d=computePlane(S,m,S.cur[m.aN],0,'max');
+    const a=Float32Array.from(d.filter((x,i)=>i%5===0)).sort(); const lo=a[Math.floor(a.length*.01)], hi=a[Math.floor(a.length*.995)];
+    S.wl={wc:(lo+hi)/2, ww:Math.max(1,hi-lo)}; return; }
+  const p=PRESETS.find(p=>p.k===val); if(p) S.wl={wc:p.wc,ww:p.ww};
+}
+function fillWinMenu(){
+  const s=$('#selWin'), S=AV()&&AV().S; s.innerHTML='';
+  const add=(v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;s.appendChild(o);};
+  add('def','Default DICOM'); add('auto','Auto');
+  if(!S||S.mod==='CT') for(const p of PRESETS) add(p.k, p.k+' · '+p.name+' ('+p.ww+'/'+p.wc+')');
+  add('custom','Kustom');
+  s.value = S ? S.wlName : 'def';
+}
+function fillSeriesMenu(){
+  const sel=$('#selSeries'); sel.innerHTML='';
+  st.series.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${s.no} · ${s.desc} · ${s.dim[2]} img`; sel.appendChild(o); });
+}
+
+/* ---------- viewport ---------- */
+function makeVp(){
+  const el=document.createElement('div'); el.className='view'; const cv=document.createElement('canvas'); el.appendChild(cv);
+  $('#views').insertBefore(el,$('#open'));
+  const vp={el,cv,ctx:cv.getContext('2d'),off:document.createElement('canvas'),S:null,k:'ax',m:null,zoom:1,px:0,py:0,cache:null,imgKey:'',dirty:true,tmp:null};
+  bindVp(vp); return vp;
+}
+function ensureVps(n){ while(st.vps.length<n) st.vps.push(makeVp()); st.nv=n; }
+function assign(vp,S,k){
+  initSeries(S); if(!viewMap(S,k)) k=nativeView(S);
+  vp.S=S; vp.k=k; vp.m=viewMap(S,k); vp.cache=null; vp.imgKey=''; vp.zoom=1; vp.px=vp.py=0; vp.tmp=null;
+}
+const visVps=()=>st.vps.slice(0,st.nv);
+function setMPR(S){
+  st.mode='mpr'; st.max=-1;
+  const ks=['ax','cor','sag'].filter(k=>viewMap(S,k)); ensureVps(ks.length);
+  ks.forEach((k,i)=>assign(st.vps[i],S,k));
+  st.active=Math.max(0,ks.indexOf(nativeView(S)));
+  layout();
+}
+function setSingle(S){
+  st.mode='2d'; st.max=-1; ensureVps(1); const A=AV(); const k=(A&&A.S===S&&viewMap(S,A.k))?A.k:nativeView(S);
+  assign(st.vps[0],S,k); st.active=0; layout();
+}
+function candidates(){ return st.series.filter(s=>s.dim[2]>=2&&!s.rgb).concat(st.series.filter(s=>!(s.dim[2]>=2&&!s.rgb))); }
+function setCompare(grid,list){
+  st.mode='cmp'; st.grid=grid; st.max=-1;
+  const [r,c]=grid.split('x').map(Number), n=r*c, prev=visVps().map(v=>v.S);
+  const pool=list||candidates(), used=[];
+  ensureVps(n);
+  for(let i=0;i<n;i++){
+    let S = list ? pool[i%pool.length] : null;
+    if(!S){ const p=prev[i]; S = (p && st.series.includes(p) && !used.includes(p)) ? p : (pool.find(s=>!used.includes(s)) || pool[i%pool.length]); }
+    used.push(S); assign(st.vps[i],S,nativeView(S));
+  }
+  if(st.active>=n) st.active=0;
+  syncFrom(AV());
+  layout();
+  const vs=visVps().filter(v=>v.S.geom); if(st.ref && vs.length>1 && vs.every(v=>Math.abs(dot(nVec(v.S,v.m.aN),nVec(vs[0].S,vs[0].m.aN)))>0.95))
+    toast('Semua panel bidangnya sama, jadi garis Ref tidak muncul. Ganti satu panel ke seri/bidang lain (mis. sagital) untuk melihat garis Ref.',5000);
+}
+function layout(){
+  const views=$('#views'), vis=visVps();
+  st.vps.forEach((v,i)=>{ v.el.classList.toggle('hide', i>=st.nv || (st.max>=0&&i!==st.max)); v.el.style.gridArea=''; });
+  let cols, rows;
+  if(st.max>=0||st.mode==='2d'){ cols='1fr'; rows='1fr'; }
+  else if(st.mode==='mpr'){
+    if(vis.length===3 && portrait()){ cols='1fr 1fr'; rows='3fr 2fr'; const first=vis.find(v=>v.k==='ax')||vis[0]; first.el.style.gridArea='1/1/2/3'; vis.filter(v=>v!==first).forEach((v,i)=>v.el.style.gridArea='2/'+(i+1)+'/3/'+(i+2)); }
+    else { cols=`repeat(${vis.length},1fr)`; rows='1fr'; }
+  } else {
+    let [r,c]=st.grid.split('x').map(Number); if(portrait()&&r<c) [r,c]=[c,r];
+    cols=`repeat(${c},1fr)`; rows=`repeat(${r},1fr)`;
+  }
+  views.style.gridTemplateColumns=cols; views.style.gridTemplateRows=rows;
+  syncUI(); requestAnimationFrame(resize);
+}
+function syncUI(){
+  $$('#gTool button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.tool));
+  const A=AV();
+  $('#bMpr').classList.toggle('on',st.mode==='mpr'); $('#bCmp').classList.toggle('on',st.mode==='cmp');
+  $('#bMpr').textContent='MPR '+(st.mode==='mpr'?'ON':'OFF'); $('#bCmp').textContent='Banding '+(st.mode==='cmp'?'ON':'OFF');
+  $('#selGrid').classList.toggle('hide',st.mode!=='cmp'); $('#bSync').classList.toggle('hide',st.mode!=='cmp'); $('#bRef').classList.toggle('hide',st.mode!=='cmp');
+  $('#selGrid').value=st.grid; $('#bSync').classList.toggle('on',st.sync); $('#bRef').classList.toggle('on',st.ref); $('#bSync').textContent='Sinkron '+(st.sync?'ON':'OFF'); $('#bRef').textContent='Ref '+(st.ref?'ON':'OFF');
+  $('#bMpr').disabled = !A || !A.S || ['cor','sag','ax'].filter(k=>viewMap(A.S,k)).length<2;
+  $$('#gView button[data-v]').forEach(b=>{ const k=b.dataset.v;
+    if(st.mode==='mpr'){ const i=visVps().findIndex(v=>v.k===k); b.disabled=i<0; b.classList.toggle('on', st.max>=0 ? i===st.max : i===st.active); }
+    else { b.disabled=!A||!A.S||!viewMap(A.S,k); b.classList.toggle('on', !!A&&A.k===k); } });
+  $('#bCross').classList.toggle('on',st.cross); $('#bId').classList.toggle('on',st.showId);
+  visVps().forEach((v,i)=>v.el.classList.toggle('active', i===st.active && st.nv>1 && st.max<0));
+  if(A&&A.S){ const i=st.series.indexOf(A.S); if(+$('#selSeries').value!==i) $('#selSeries').value=i; fillWinMenu(); }
+}
+
+/* ---------- geometri ---------- */
+function geom(v){
+  const S=v.S, m=v.m, nu=S.dim[m.aU], nv=S.dim[m.aV], su=S.sp[m.aU], sv=S.sp[m.aV];
+  const cw=v._W||v.cv.clientWidth, ch=v._H||v.cv.clientHeight, W=nu*su, H=nv*sv;
+  const sc=Math.min(cw/W, ch/H)*0.94*v.zoom;
+  return {nu,nv,su,sv,cw,ch,sc,W,H, x0:cw/2+v.px-W*sc/2, y0:ch/2+v.py-H*sc/2};
+}
+const toPlane=(g,x,y)=>[(x-g.x0)/(g.su*g.sc),(y-g.y0)/(g.sv*g.sc)];
+const toScreen=(g,u,v)=>[g.x0+u*g.su*g.sc, g.y0+v*g.sv*g.sc];
+const slicePos=v=>v.S.cur[v.m.aN];
+function viewIndex(v){ const N=v.S.dim[v.m.aN], p=slicePos(v); return v.m.fN?N-1-p:p; }
+const planeU=(v,a)=>{ const n=v.S.dim[a], p=v.S.cur[a]+.5; return (a===v.m.aU?v.m.fU:v.m.fV)? n-p : p; };
+function planeToVol(v,u,vv){ const S=v.S,m=v.m,g=S.cur.slice(); const nu=S.dim[m.aU], nv=S.dim[m.aV];
+  let iu=Math.max(0,Math.min(nu-1,Math.floor(u))), iv=Math.max(0,Math.min(nv-1,Math.floor(vv)));
+  g[m.aU]=m.fU?nu-1-iu:iu; g[m.aV]=m.fV?nv-1-iv:iv; return g; }
+function planePt(v,u,vv){ const S=v.S,m=v.m,g=[0,0,0]; g[m.aN]=S.cur[m.aN]; const nu=S.dim[m.aU],nv=S.dim[m.aV];
+  g[m.aU]=m.fU?nu-u-.5:u-.5; g[m.aV]=m.fV?nv-vv-.5:vv-.5; return patPos(S,g[0],g[1],g[2]); }
+
+/* ---------- render ---------- */
+function getPlane(v){
+  const S=v.S; if(!S||!v.m||S.rgb) return null;
+  const half = st.slab.mm>0 ? Math.round(st.slab.mm/2/S.sp[v.m.aN]) : 0;
+  const key=S.key+'|'+v.k+'|'+slicePos(v)+'|'+half+'|'+st.slab.mode;
+  if(!v.cache||v.cache.key!==key) v.cache={key, half, data:computePlane(S,v.m,slicePos(v),half,st.slab.mode||'max')};
+  return v.cache;
+}
+function updateImage(v){
+  const S=v.S, m=v.m, nu=S.dim[m.aU], nv=S.dim[m.aV];
+  if(v.off.width!==nu||v.off.height!==nv){ v.off.width=nu; v.off.height=nv; v.imgKey=''; }
+  const oc=v.off.getContext('2d');
+  if(S.rgb){ const key=S.key+'rgb'+slicePos(v); if(v.imgKey===key) return; v.imgKey=key;
+    const id=oc.createImageData(nu,nv), d=id.data, src=S.slices[slicePos(v)];
+    for(let i=0,j=0;i<nu*nv;i++,j+=4){ d[j]=src[i*3]; d[j+1]=src[i*3+1]; d[j+2]=src[i*3+2]; d[j+3]=255; }
+    oc.putImageData(id,0,0); return; }
+  const P=getPlane(v), key=P.key+'|'+S.wl.wc+'|'+S.wl.ww;
+  if(v.imgKey===key) return; v.imgKey=key;
+  const id=oc.createImageData(nu,nv), d32=new Uint32Array(id.data.buffer), src=P.data;
+  const lo=S.wl.wc-S.wl.ww/2, k=255/S.wl.ww, inv=S.invert;
+  for(let i=0;i<src.length;i++){ let g=(src[i]-lo)*k; g=g<0?0:g>255?255:g|0; if(inv) g=255-g; d32[i]=0xFF000000|(g<<16)|(g<<8)|g; }
+  oc.putImageData(id,0,0);
+}
+function line(ctx,x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+function drawVp(v, exp=false){
+  const S=v.S, ctx=v.ctx, dpr=v._W?1:(devicePixelRatio||1);
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle='#000'; ctx.fillRect(0,0,v.cv.width,v.cv.height);
+  if(!S||!v.m) return;
+  updateImage(v);
+  const g=geom(v), cw=g.cw, ch=g.ch;
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.drawImage(v.off, g.x0, g.y0, g.W*g.sc, g.H*g.sc);
+  // garis silang MPR (gaya Horos: hijau, celah di titik potong)
+  if(st.mode==='mpr' && st.cross && !exp && S.geom){
+    const [cx,cy]=toScreen(g,planeU(v,v.m.aU),planeU(v,v.m.aV)), gap=22;
+    ctx.strokeStyle=GREEN; ctx.lineWidth=1;
+    for(const w of visVps()){ if(w===v||w.S!==S) continue; const a=w.m.aN;
+      if(a===v.m.aU){ line(ctx,cx,0,cx,cy-gap); line(ctx,cx,cy+gap,cx,ch); }
+      else if(a===v.m.aV){ line(ctx,0,cy,cx-gap,cy); line(ctx,cx+gap,cy,cw,cy); } }
+  }
+  // garis referensi (mode banding)
+  const A=AV();
+  if(st.mode==='cmp' && st.ref && !exp && A && A!==v && A.S && A.S.geom && S.geom){
+    const nA=nVec(A.S,A.m.aN), PA=patPos(A.S,...A.S.cur);
+    if(Math.abs(dot(nA,nVec(S,v.m.aN)))<0.95){
+      const d=(u,vv)=>{ const q=planePt(v,u,vv); return (q[0]-PA[0])*nA[0]+(q[1]-PA[1])*nA[1]+(q[2]-PA[2])*nA[2]; };
+      const c00=d(0,0), c10=d(g.nu,0), c01=d(0,g.nv), c11=c10+c01-c00;
+      const E=[[0,0,c00,g.nu,0,c10],[g.nu,0,c10,g.nu,g.nv,c11],[g.nu,g.nv,c11,0,g.nv,c01],[0,g.nv,c01,0,0,c00]], pts=[];
+      for(const [u1,v1,a,u2,v2,b] of E){ if((a<=0&&b>=0)||(a>=0&&b<=0)){ if(a===b) continue; const t=a/(a-b); pts.push([u1+(u2-u1)*t, v1+(v2-v1)*t]); } }
+      if(pts.length>=2){ const [p1,p2]=[toScreen(g,...pts[0]),toScreen(g,...pts[pts.length-1])];
+        ctx.strokeStyle=REF; ctx.lineWidth=1.5; line(ctx,p1[0],p1[1],p2[0],p2[1]); }
+    }
+  }
+  // ukuran
+  const pos=slicePos(v);
+  for(const mm of S.meas){ if(mm.vk!==v.k||mm.pos!==pos) continue; drawMeas(ctx,g,mm,v); }
+  if(v.tmp) drawMeas(ctx,g,v.tmp,v);
+  // penggaris skala
+  if(!S.rgb||S.ps) drawRulers(ctx,g);
+  // teks
+  const small=cw<360;
+  ctx.font=(small?'11px':'13px')+' system-ui,sans-serif';
+  const T=(s,x,y,al='left',c='#e6e6e6',bl='top')=>{ ctx.textAlign=al; ctx.textBaseline=bl; ctx.lineWidth=3; ctx.strokeStyle='#000'; ctx.strokeText(s,x,y); ctx.fillStyle=c; ctx.fillText(s,x,y); };
+  const fit=(s,w)=>{ if(ctx.measureText(s).width<=w) return s; while(s.length>1&&ctx.measureText(s+'…').width>w) s=s.slice(0,-1); return s+'…'; };
+  const lh=small?14:17; let y=5;
+  const N=S.dim[v.m.aN], idx=viewIndex(v), vname=S.geom?VIEWDEF[v.k].name:'Gambar';
+  const sl = st.slab.mm>0 ? ({max:'MIP',min:'MinIP',avg:'Rata²'}[st.slab.mode]+' '+st.slab.mm+' mm') : (v.m.aN===2&&S.thick? 'Tebal '+S.thick+' mm' : 'Jarak '+S.sp[v.m.aN].toFixed(2)+' mm');
+  if(small){
+    if(!S.rgb) T('W '+Math.round(S.wl.ww)+' L '+Math.round(S.wl.wc),5,y), y+=lh;
+    T(fit(S.desc,cw-12),5,y,'left',st.mode==='cmp'?'#ffd56b':'#bbb');
+    T(vname.slice(0,3)+' '+(idx+1)+'/'+N,5,ch-5,'left','#cfcfcf','bottom');
+    if(st.slab.mm>0) T(sl,cw-8,ch-5,'right','#9aa4ae','bottom');
+  } else {
+    if(!S.rgb) T('WL: '+Math.round(S.wl.wc)+' WW: '+Math.round(S.wl.ww),6,y), y+=lh;
+    const h=st.hover; if(h&&h.v===v&&!exp){ T(h.t1,6,y), y+=lh; if(h.t2) T(h.t2,6,y), y+=lh; }
+    let yr=5; const wR=cw/2-30;
+    if(st.showId&&!exp){ const P=S.pat; if(P.name) T(fit(P.name,wR),cw-8,yr,'right'), yr+=lh;
+      const l2=[P.id,P.sex,P.age].filter(Boolean).join(' · '); if(l2) T(fit(l2,wR),cw-8,yr,'right','#bbb'), yr+=lh; }
+    T(fit(S.desc,wR),cw-8,yr,'right', st.mode==='cmp'?'#ffd56b':'#bbb');
+    T(vname+'  Im '+(idx+1)+'/'+N+(v.zoom!==1?'  ·  '+Math.round(v.zoom*100)+'%':''),6,ch-6,'left','#cfcfcf','bottom');
+    const pp=patPos(S,...S.cur); const loc = pp&&S.geom ? '  ·  '+['X','Y','Z'][VIEWDEF[v.k].n[0]]+' '+pp[VIEWDEF[v.k].n[0]].toFixed(1)+' mm' : '';
+    T(sl+loc,cw-8,ch-6,'right','#9aa4ae','bottom');
+    if(S.ds>1) T('resolusi 1/'+S.ds,6,ch-6-lh,'left','#9aa4ae','bottom');
+  }
+  // label orientasi
+  if(v.m.lab){ ctx.font=(small?'13px':'16px')+' system-ui,sans-serif'; const L=v.m.lab, c2='#dcdcdc';
+    T(L[0],6,ch/2,'left',c2,'middle'); T(L[1],cw-10,ch/2,'right',c2,'middle'); T(L[2],cw/2,6,'center',c2,'top'); T(L[3],cw/2,ch-(small?18:22),'center',c2,'bottom'); }
+  if(st.mode==='cmp'&&st.sync&&!exp&&v!==AV()&&v._out) T('di luar cakupan seri ini',cw/2,ch/2,'center','#ff8a65','middle');
+  if(N>1&&!exp){ const hh=ch-60, yy=30+hh*idx/(N-1); ctx.fillStyle='#ffffff1c'; ctx.fillRect(cw-3,30,2,hh); ctx.fillStyle='#e0453a'; ctx.fillRect(cw-4,yy-5,4,10); }
+}
+function drawRulers(ctx,g){
+  const C=[10,20,50,100,200,500]; let L=C.find(x=>x*g.sc>=Math.min(g.ch,g.cw)*0.22)||500; const px=L*g.sc;
+  if(px>Math.min(g.ch,g.cw)*0.8) return;
+  ctx.strokeStyle=GREEN; ctx.lineWidth=1;
+  const x=Math.min(60,g.cw*0.08), y0=g.ch/2-px/2;
+  line(ctx,x,y0,x,y0+px);
+  for(let i=0;i<=10;i++){ const t=(i%5===0)?9:5, yy=y0+px*i/10; line(ctx,x,yy,x+t,yy); }
+  const yb=g.ch-34, x0=g.cw/2-px/2;
+  line(ctx,x0,yb,x0+px,yb);
+  for(let i=0;i<=10;i++){ const t=(i%5===0)?9:5, xx=x0+px*i/10; line(ctx,xx,yb,xx,yb-t); }
+  ctx.font='11px system-ui,sans-serif'; ctx.fillStyle=GREEN; ctx.textAlign='left'; ctx.textBaseline='bottom';
+  ctx.fillText(L>=10?(L/10)+' cm':L+' mm', x0+px+5, yb+1);
+}
+function drawMeas(ctx,g,mm,v){
+  const S=v.S, [x1,y1]=toScreen(g,mm.a[0],mm.a[1]), [x2,y2]=toScreen(g,mm.b[0],mm.b[1]);
+  ctx.strokeStyle=MEAS; ctx.fillStyle=MEAS; ctx.lineWidth=1.5; let label;
+  if(mm.t==='len'){ line(ctx,x1,y1,x2,y2);
+    for(const [x,y] of [[x1,y1],[x2,y2]]){ ctx.beginPath(); ctx.arc(x,y,mm.sel?5:3,0,7); ctx.fill(); if(isTouch&&!mm.sel){ ctx.beginPath(); ctx.arc(x,y,7,0,7); ctx.globalAlpha=.35; ctx.stroke(); ctx.globalAlpha=1; } }
+    const d=Math.hypot((mm.b[0]-mm.a[0])*g.su,(mm.b[1]-mm.a[1])*g.sv); label=(d>=10?(d/10).toFixed(2)+' cm':d.toFixed(1)+' mm');
+  } else if(mm.t==='roi'){
+    const rmm=Math.hypot((mm.b[0]-mm.a[0])*g.su,(mm.b[1]-mm.a[1])*g.sv);
+    ctx.beginPath(); ctx.arc(x1,y1,rmm*g.sc,0,7); ctx.stroke();
+    for(const [x,y] of [[x1,y1],[x2,y2]]){ ctx.beginPath(); ctx.arc(x,y,mm.sel?5:3,0,7); ctx.fill(); }
+    const P=getPlane(v); if(P&&rmm>0){ const rk=P.key+'|'+mm.a[0].toFixed(2)+','+mm.a[1].toFixed(2)+'|'+rmm.toFixed(2); if(mm._k!==rk){ mm._k=rk; mm._s=roiStats(P.data,g,mm.a,rmm); } const s=mm._s;
+      const U=S.mod==='CT'?' HU':'', f=x=>Number.isInteger(x)?x:x.toFixed(1);
+      if(s.n) label=['Rerata '+s.mean.toFixed(1)+' ± '+s.sd.toFixed(1)+U, 'Min '+f(s.mn)+' · Maks '+f(s.mx)+'  ·  '+(s.area>=100?(s.area/100).toFixed(2)+' cm²':s.area.toFixed(1)+' mm²')]; }
+  } else if(mm.t==='pt'){
+    ctx.lineWidth=1.5; line(ctx,x1-7,y1,x1-2,y1); line(ctx,x1+2,y1,x1+7,y1); line(ctx,x1,y1-7,x1,y1-2); line(ctx,x1,y1+2,x1,y1+7);
+    const P=getPlane(v), iu=Math.floor(mm.a[0]), iv=Math.floor(mm.a[1]);
+    if(P&&iu>=0&&iv>=0&&iu<g.nu&&iv<g.nv){ let s=0,n=0; for(let b=-1;b<=1;b++) for(let a=-1;a<=1;a++){ const uu=iu+a, vv=iv+b; if(uu<0||vv<0||uu>=g.nu||vv>=g.nv) continue; s+=P.data[vv*g.nu+uu]; n++; }
+      const val=P.data[iv*g.nu+iu], f=x=>Number.isInteger(x)?x:x.toFixed(1);
+      label=(S.mod==='CT'?f(val)+' HU':'SI '+f(val))+'  (3×3: '+(s/n).toFixed(1)+')'; }
+  }
+  if(label){ ctx.font='13px system-ui,sans-serif'; ctx.textBaseline='bottom'; ctx.textAlign='left';
+    const L=Array.isArray(label)?label:[label], lx=(mm.t==='len'?x2:x1)+(mm.t==='roi'?0:9), ly=(mm.t==='len'?y2:y1)-(mm.t==='roi'?Math.hypot((mm.b[0]-mm.a[0])*g.su,(mm.b[1]-mm.a[1])*g.sv)*g.sc+4:6);
+    const mw=Math.max(...L.map(s=>ctx.measureText(s).width)), lxx=Math.max(4,Math.min(lx,g.cw-mw-8));
+    L.forEach((s,i)=>{ const yy=Math.max(14,ly)-(L.length-1-i)*15; ctx.lineWidth=3; ctx.strokeStyle='#000'; ctx.strokeText(s,lxx,yy); ctx.fillStyle=MEAS; ctx.fillText(s,lxx,yy); }); }
+}
+function roiStats(data,g,c,rmm){
+  const ru=rmm/g.su, rv=rmm/g.sv; let n=0,s=0,s2=0,mn=Infinity,mx=-Infinity;
+  for(let v=Math.max(0,Math.floor(c[1]-rv)); v<=Math.min(g.nv-1,Math.ceil(c[1]+rv)); v++)
+    for(let u=Math.max(0,Math.floor(c[0]-ru)); u<=Math.min(g.nu-1,Math.ceil(c[0]+ru)); u++){
+      const du=(u+.5-c[0])/ru, dv=(v+.5-c[1])/rv; if(du*du+dv*dv>1) continue; const x=data[v*g.nu+u]; n++; s+=x; s2+=x*x; if(x<mn)mn=x; if(x>mx)mx=x; }
+  const mean=n?s/n:0; return {n, mean, mn, mx, sd:n?Math.sqrt(Math.max(0,s2/n-mean*mean)):0, area:n*g.su*g.sv};
+}
+let raf=0;
+function redraw(){ for(const v of st.vps) v.dirty=true; if(!raf) raf=requestAnimationFrame(()=>{ raf=0;
+  visVps().forEach((v,i)=>{ if(v.dirty&&!v.el.classList.contains('hide')){ v.dirty=false; drawVp(v); } }); }); }
+function resize(){ const dpr=devicePixelRatio||1; for(const v of visVps()){ const c=v.cv, w=Math.round(c.clientWidth*dpr), h=Math.round(c.clientHeight*dpr);
+  if(c.width!==w||c.height!==h){ c.width=w; c.height=h; } } redraw(); }
+let lastPortrait=null;
+addEventListener('resize',()=>{ const p=portrait(); if(p!==lastPortrait){ lastPortrait=p; if(st.nv) layout(); return; } resize(); });
+
+/* ---------- aksi ---------- */
+function syncFrom(A){
+  if(st.mode!=='cmp'||!st.sync||!A.S.geom) return;
+  const PA=patPos(A.S,...A.S.cur), nA=nVec(A.S,A.m.aN);
+  for(const B of visVps()){ if(B===A||B.S===A.S||!B.S.geom||!B.S.origin) continue;
+    const a=B.m.aN, w=nVec(B.S,a); if(Math.abs(dot(w,nA))<0.9) continue;
+    const o=B.S.origin, i=Math.round(((PA[0]-o[0])*w[0]+(PA[1]-o[1])*w[1]+(PA[2]-o[2])*w[2])/B.S.sp[a]);
+    B._out = i<-1||i>B.S.dim[a]; B.S.cur[a]=Math.max(0,Math.min(B.S.dim[a]-1,i)); }
+}
+function scrollVp(v,d){ if(!v.m) return; v._out=false; const a=v.m.aN, N=v.S.dim[a], dir=v.m.fN?-1:1;
+  const n=Math.max(0,Math.min(N-1,v.S.cur[a]+d*dir)); if(n!==v.S.cur[a]){ v.S.cur[a]=n; syncFrom(v); redraw(); } }
+function zoomAt(v,f,x,y){ const g=geom(v), cx=g.cw/2, cy=g.ch/2, z=Math.max(.2,Math.min(30,v.zoom*f)), r=z/v.zoom;
+  v.px=x-cx-(x-cx-v.px)*r; v.py=y-cy-(y-cy-v.py)*r; v.zoom=z; redraw(); }
+function setActive(i){ if(st.active!==i){ st.active=i; syncUI(); redraw(); } }
+function setCross(v,x,y){ const g=geom(v), [u,vv]=toPlane(g,x,y); v.S.cur=planeToVol(v,u,vv); syncFrom(v); redraw(); }
+function nearMeas(v,x,y,tol){
+  if(!v.S||!v.m) return null; const g=geom(v), pos=slicePos(v); let best=null, bd=tol;
+  for(const mm of v.S.meas){ if(mm.vk!==v.k||mm.pos!==pos) continue;
+    for(const w of (mm.t==='pt'?['a']:['a','b'])){ const [sx,sy]=toScreen(g,mm[w][0],mm[w][1]), d=Math.hypot(sx-x,sy-y); if(d<bd){ bd=d; best={mm,w}; } } }
+  return best;
+}
+function nearCross(v,x,y,tol){
+  if(st.mode!=='mpr'||!st.cross||!v.S||!v.S.geom||st.nv<2||st.max>=0) return null;
+  const g=geom(v), [cx,cy]=toScreen(g,planeU(v,v.m.aU),planeU(v,v.m.aV));
+  const hasU=visVps().some(w=>w!==v&&w.S===v.S&&w.m.aN===v.m.aU), hasV=visVps().some(w=>w!==v&&w.S===v.S&&w.m.aN===v.m.aV);
+  const dx=Math.abs(x-cx), dy=Math.abs(y-cy);
+  if(dx<tol*1.6&&dy<tol*1.6&&hasU&&hasV) return 'xh';
+  if(dx<tol&&hasU) return 'xhU'; if(dy<tol&&hasV) return 'xhV'; return null;
+}
+function dragCross(v,mode,x,y){ const g=geom(v), [u,vv]=toPlane(g,x,y), c=planeToVol(v,u,vv), S=v.S;
+  if(mode!=='xhV') S.cur[v.m.aU]=c[v.m.aU]; if(mode!=='xhU') S.cur[v.m.aV]=c[v.m.aV]; redraw(); }
+function hover(v,x,y){ const S=v.S; if(!S||!v.m) return;
+  const xh=nearMeas(v,x,y,9)?'meas':nearCross(v,x,y,8); v.cv.style.cursor = xh==='meas'?'grab':xh==='xh'?'move':xh==='xhU'?'ew-resize':xh==='xhV'?'ns-resize':'crosshair'; const g=geom(v), [u,vv]=toPlane(g,x,y);
+  if(u<0||vv<0||u>=g.nu||vv>=g.nv){ if(st.hover){ st.hover=null; redraw(); } return; }
+  const iu=Math.floor(u), iv=Math.floor(vv); let t1='X: '+iu+' px Y: '+iv+' px';
+  if(!S.rgb){ const val=getPlane(v).data[iv*g.nu+iu]; t1+=' Value: '+(Number.isInteger(val)?val:val.toFixed(1)); }
+  const p=S.geom?planePt(v,iu+.5,iv+.5):null;
+  st.hover={v,t1,t2:p?'X: '+p[0].toFixed(2)+' mm Y: '+p[1].toFixed(2)+' mm Z: '+p[2].toFixed(2)+' mm':''}; redraw(); }
+function toggleMax(i){ if(st.nv<2) return; st.max = st.max===i ? -1 : i; st.active=i; layout(); }
+
+function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap=0, lastXY=[0,0];
+  const idx=()=>st.vps.indexOf(v);
+  const xy=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  cv.addEventListener('pointerdown',e=>{ if(!v.S||!v.m) return; cv.setPointerCapture(e.pointerId); setActive(idx());
+    const p=xy(e); ptr.set(e.pointerId,p);
+    if(ptr.size===2){ const [a,b]=[...ptr.values()]; v.tmp=null; op=null;
+      pin={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, m:[(a[0]+b[0])/2,(a[1]+b[1])/2], z:v.zoom, px:v.px, py:v.py}; return; }
+    if(ptr.size>2) return;
+    let t=st.tool; if(e.pointerType==='mouse'){ if(e.button===2) t='zoom'; else if(e.button===1||e.shiftKey) t='pan'; }
+    const ed=(e.pointerType!=='mouse'||e.button===0) ? nearMeas(v,p[0],p[1],e.pointerType==='mouse'?9:22) : null;
+    if(ed){ const pl0=toPlane(geom(v),p[0],p[1]); op={t:'edit', ed, x:p[0], y:p[1], lx:p[0], ly:p[1], acc:0, last:pl0}; ed.mm.sel=true; redraw(); return; }
+    const xh=(e.pointerType!=='mouse'||e.button===0)&&!e.shiftKey ? nearCross(v,p[0],p[1],e.pointerType==='mouse'?8:20) : null;
+    if(xh&&t!=='len'&&t!=='roi'&&t!=='hu') t=xh;
+    op={t, x:p[0], y:p[1], lx:p[0], ly:p[1], acc:0};
+    const pl=toPlane(geom(v),p[0],p[1]);
+    if(t==='len'||t==='roi') v.tmp={t, vk:v.k, pos:slicePos(v), a:pl, b:pl.slice()};
+    if(t==='hu') v.tmp={t:'pt', vk:v.k, pos:slicePos(v), a:pl, b:pl};
+    if(t==='cross') setCross(v,p[0],p[1]);
+  });
+  cv.addEventListener('pointermove',e=>{ if(!v.S||!v.m) return; const p=xy(e);
+    if(!ptr.has(e.pointerId)){ if(e.pointerType==='mouse') hover(v,p[0],p[1]); return; }
+    ptr.set(e.pointerId,p);
+    if(pin&&ptr.size>=2){ const [a,b]=[...ptr.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1]), m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      const g=geom(v), cx=g.cw/2, cy=g.ch/2, z=Math.max(.2,Math.min(30,pin.z*d/pin.d)), r=z/pin.z;
+      v.zoom=z; v.px=m[0]-cx-(pin.m[0]-cx-pin.px)*r; v.py=m[1]-cy-(pin.m[1]-cy-pin.py)*r; redraw(); return; }
+    if(!op) return; const dx=p[0]-op.lx, dy=p[1]-op.ly; op.lx=p[0]; op.ly=p[1];
+    if(op.t==='scroll'){ const N=v.S.dim[v.m.aN], step=Math.max(2,Math.min(14,cv.clientHeight/N*1.2)); op.acc+=dy;
+      const n=Math.trunc(op.acc/step); if(n){ op.acc-=n*step; scrollVp(v,n); } }
+    else if(op.t==='wl'){ const S=v.S, f=Math.max(.5,S.wl.ww*.004); S.wl={wc:S.wl.wc+dy*f, ww:Math.max(1,S.wl.ww+dx*f)}; S.wlName='custom'; $('#selWin').value='custom'; redraw(); }
+    else if(op.t==='pan'){ v.px+=dx; v.py+=dy; redraw(); }
+    else if(op.t==='zoom'){ zoomAt(v,Math.exp(-dy*.01),op.x,op.y); }
+    else if(op.t==='len'||op.t==='roi'){ v.tmp.b=toPlane(geom(v),p[0],p[1]); redraw(); }
+    else if(op.t==='cross') setCross(v,p[0],p[1]);
+    else if(op.t==='hu'){ v.tmp.a=v.tmp.b=toPlane(geom(v),p[0],p[1]); redraw(); }
+    else if(op.t.startsWith('xh')) dragCross(v,op.t,p[0],p[1]);
+    else if(op.t==='edit'){ const pl=toPlane(geom(v),p[0],p[1]), {mm,w}=op.ed;
+      if(mm.t==='roi'&&w==='a'){ const du=pl[0]-op.last[0], dv=pl[1]-op.last[1]; mm.a=[mm.a[0]+du,mm.a[1]+dv]; mm.b=[mm.b[0]+du,mm.b[1]+dv]; }
+      else if(mm.t==='pt'){ mm.a=mm.b=pl; } else mm[w]=pl;
+      op.last=pl; redraw(); }
+  });
+  const end=e=>{ if(!ptr.has(e.pointerId)) return; ptr.delete(e.pointerId);
+    if(pin){ if(ptr.size<2) pin=null; op=null; return; }
+    if(op&&op.t==='edit'){ op.ed.mm.sel=false; op=null; redraw(); return; }
+    if(op){ const moved=Math.hypot(op.lx-op.x,op.ly-op.y);
+      if((op.t==='len'||op.t==='roi')&&v.tmp){ const g=geom(v); const px=Math.hypot((v.tmp.b[0]-v.tmp.a[0])*g.su,(v.tmp.b[1]-v.tmp.a[1])*g.sv)*g.sc; if(px>4) v.S.meas.push(v.tmp); v.tmp=null; redraw(); }
+      if(op.t==='hu'&&v.tmp){ v.S.meas.push(v.tmp); v.tmp=null; redraw(); }
+      if(moved<6 && e.type==='pointerup'){ const now=performance.now(), p=[op.x,op.y];
+        if(now-lastTap<320 && Math.hypot(p[0]-lastXY[0],p[1]-lastXY[1])<30){ lastTap=0; toggleMax(idx()); } else { lastTap=now; lastXY=p; } }
+      op=null; }
+  };
+  cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
+  cv.addEventListener('pointerleave',()=>{ if(st.hover&&st.hover.v===v){ st.hover=null; redraw(); } });
+  cv.addEventListener('wheel',e=>{ if(!v.S||!v.m) return; e.preventDefault(); setActive(idx());
+    if(e.ctrlKey){ const p=xy(e); zoomAt(v,Math.exp(-e.deltaY*.002),p[0],p[1]); return; }
+    const d=Math.abs(e.deltaY)<40?Math.sign(e.deltaY):Math.round(e.deltaY/50)||Math.sign(e.deltaY); scrollVp(v,d); },{passive:false});
+}
+
+/* ---------- toolbar ---------- */
+$$('#gTool button').forEach(b=>b.onclick=()=>{ st.tool=b.dataset.t; syncUI(); });
+$$('#gView button[data-v]').forEach(b=>b.onclick=()=>{ const k=b.dataset.v, A=AV(); if(!A) return;
+  if(st.mode==='mpr'){ const i=visVps().findIndex(v=>v.k===k); if(i>=0) toggleMax(i); }
+  else if(viewMap(A.S,k)){ assign(A,A.S,k); syncFrom(AV()); syncUI(); redraw(); } });
+$('#bMpr').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr') setSingle(A.S); else setMPR(A.S); };
+$('#bCmp').onclick=()=>{ if(st.mode==='cmp'){ setSingle(AV().S); return; } const A=AV(); const pool=candidates(); const first=A&&A.S; setCompare(st.grid, first?[first,...pool.filter(s=>s!==first)]:null); };
+$('#selGrid').onchange=e=>setCompare(e.target.value);
+$('#bSync').onclick=()=>{ st.sync=!st.sync; if(st.sync) syncFrom(AV()); syncUI(); redraw(); };
+$('#bRef').onclick=()=>{ st.ref=!st.ref; syncUI(); redraw(); };
+$('#selWin').onchange=e=>{ const A=AV(); if(!A||e.target.value==='custom') return; setWinS(A.S,e.target.value); syncUI(); redraw(); };
+$('#selSlab').onchange=e=>{ const [mm,mode]=e.target.value.split('|'); st.slab={mm:+mm,mode}; redraw(); };
+$('#selSeries').onchange=e=>{ const S=st.series[+e.target.value];
+  if(st.mode==='mpr') setMPR(S); else if(st.mode==='2d') setSingle(S); else { assign(AV(),S,nativeView(S)); syncFrom(AV()); syncUI(); redraw(); } };
+$('#bCross').onclick=()=>{ st.cross=!st.cross; syncUI(); redraw(); };
+$('#bId').onclick=()=>{ st.showId=!st.showId; syncUI(); redraw(); };
+$('#bClear').onclick=()=>{ for(const s of st.series) s.meas=[]; redraw(); };
+$('#bReset').onclick=()=>{ for(const v of st.vps){ v.zoom=1; v.px=v.py=0; } redraw(); };
+$('#bHelp').onclick=()=>$('#modal').classList.remove('hide');
+$('#bCloseHelp').onclick=()=>$('#modal').classList.add('hide');
+$('#modal').onclick=e=>{ if(e.target.id==='modal') $('#modal').classList.add('hide'); };
+$('#bSave').onclick=saveImage;
+$('#bOpen').onclick=()=>$('#inFiles').click();
+
+const TOOLKEY={l:'len',o:'roi',h:'hu',s:'scroll',w:'wl',g:'pan',z:'zoom',x:'cross'};
+function setTool(t){ st.tool=t; syncUI(); const n={len:'Ukur panjang',roi:'ROI bulat',hu:'Densitas HU',scroll:'Scroll',wl:'W/L',pan:'Geser',zoom:'Zoom',cross:'Silang'}[t]; toast('Alat: '+n,900); }
+addEventListener('keydown',e=>{
+  const v=AV(); if(!v||!v.S||/SELECT|INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const n=e.shiftKey?10:1, k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k==='ArrowUp'||k==='PageUp'){ scrollVp(v,-(k==='PageUp'?10:n)); e.preventDefault(); }
+  else if(k==='ArrowDown'||k==='PageDown'){ scrollVp(v,(k==='PageDown'?10:n)); e.preventDefault(); }
+  else if(k==='Tab'&&st.nv>1){ setActive((st.active+(e.shiftKey?st.nv-1:1))%st.nv); e.preventDefault(); }
+  else if(/^[0-9]$/.test(k)){
+    let w=k; if(v.S.mod!=='CT'){ w = k==='1'?'def':k==='2'?'auto':null; if(!w) return; }
+    setWinS(v.S,w); syncUI(); redraw(); const p=PRESETS.find(p=>p.k===w); toast('Window: '+(p?p.name+' ('+p.ww+'/'+p.wc+')':w==='def'?'Default DICOM':'Auto'),900); e.preventDefault(); }
+  else if(k==='s'&&e.shiftKey) saveImage();
+  else if(TOOLKEY[k]){ setTool(TOOLKEY[k]); e.preventDefault(); }
+  else if(k==='r') $('#bReset').click();
+  else if(k==='c') $('#bCross').click();
+  else if(k==='i') $('#bId').click();
+  else if(k==='m') $('#bMpr').click();
+  else if(k==='b') $('#bCmp').click();
+  else if(k==='Delete'||k==='Backspace'){ const S=v.S, pos=slicePos(v), i=S.meas.map((m,j)=>m.vk===v.k&&m.pos===pos?j:-1).filter(j=>j>=0).pop(); if(i!=null&&i>=0){ S.meas.splice(i,1); redraw(); toast('Ukuran terakhir di slice ini dihapus',900); } e.preventDefault(); }
+  else if(k==='Escape') $('#modal').classList.add('hide');
+});
+
+async function saveImage(){
+  const v=AV(); if(!v||!v.S||!v.m) return;
+  drawVp(v,true);
+  const blob=await new Promise(r=>v.cv.toBlob(r,'image/png'));
+  drawVp(v);
+  const name=`${v.k}_${(v.S.desc||'seri').replace(/[^\w\-]+/g,'_')}_${viewIndex(v)+1}.png`;
+  let dl=null; try{ if(window.claude&&claude.use) dl=await Promise.race([claude.use('downloads'),new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
+  if(dl){ try{ await dl.save({filename:name,data:blob}); toast('Gambar disimpan (tanpa identitas pasien)'); }catch(e){ if(e&&e.code!=='declined') toast('Gagal menyimpan gambar'); } return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Gambar disimpan (tanpa identitas pasien)');
+}
+
+/* ---------- buka file ---------- */
+function budget(){ const dm=navigator.deviceMemory||4; return isTouch ? (dm>=8?700e6:dm>=6?500e6:300e6) : 1.8e9; }
+/* ---------- daftar pasien / studi ---------- */
+st.studies=[]; st.si=-1;
+const curStudy=()=>st.studies[st.si];
+function bestSeries(series){
+  const junk=/localizer|scout|survey|posdisp|topogram|_mip|radial|resp|protocol|report/i;
+  const main=series.filter(s=>!s.rgb&&!junk.test(s.desc));
+  let best=(main.length?main:series).reduce((b,s)=>s.dim[2]>b.dim[2]?s:b);
+  if(series.some(s=>s.mod==='MR')){ const mr=main.filter(s=>s.mod==='MR'&&s.dim[2]>=3); if(mr.length) best=mr.slice().sort((a,b)=>a.no-b.no)[0]; }
+  return best;
+}
+function studyBytes(s){ let n=0; for(const S of s.series) for(const a of S.slices) n+=a.byteLength; return n; }
+function renderPList(){
+  const box=$('#plItems'); box.innerHTML='';
+  if(!st.studies.length){ box.innerHTML='<div class="note" style="padding:8px">Belum ada pasien. Tekan "+ File / zip".</div>'; }
+  st.studies.forEach((s,i)=>{ const P=s.pat, d=document.createElement('div'); d.className='pi'+(i===st.si?' on':'');
+    const date=(P.date||'').replace(/(\d{4})(\d\d)(\d\d)/,'$3-$2-$1'), nimg=s.series.reduce((a,S)=>a+S.dim[2],0);
+    d.innerHTML=`<b></b><span></span><span></span><button title="Hapus dari daftar">×</button>`;
+    d.querySelector('b').textContent=P.name||'(tanpa nama)';
+    d.querySelectorAll('span')[0].textContent=[P.id,P.sex,P.age,date].filter(Boolean).join(' · ');
+    d.querySelectorAll('span')[1].textContent=`${s.mods} ${P.desc||''} · ${s.series.length} seri, ${nimg} gambar · ${(studyBytes(s)/1e6).toFixed(0)} MB`;
+    d.onclick=e=>{ if(e.target.tagName==='BUTTON') return; openStudy(i); if(innerWidth<761) showPList(false); };
+    d.querySelector('button').onclick=()=>removeStudy(i);
+    box.appendChild(d); });
+  $('#bPat').textContent='☰ Pasien'+(st.studies.length?' ('+st.studies.length+')':'');
+}
+function showPList(on){ $('#plist').classList.toggle('hide',!on); document.body.classList.toggle('plist',on); $('#bPat').classList.toggle('on',on); requestAnimationFrame(()=>{ if(st.nv) layout(); }); }
+function saveStudyState(){ const s=curStudy(); if(!s) return; s.last=AV()&&AV().S; s.mode=st.mode; s.ask={imgs:AK.imgs, exam:$('#askExam').value, clin:$('#askClin').value, q:$('#askQ').value, last:AK.last, turns:AK.turns}; }
+function loadAskState(s){ const a=s.ask||{imgs:[],exam:'',clin:'',q:'',last:'',turns:null};
+  AK.imgs=a.imgs; AK.last=a.last; AK.turns=a.turns; $('#askExam').value=a.exam; $('#askClin').value=a.clin; $('#askQ').value=a.q;
+  if(a.last) renderAns(a.last); else { $('#ansBox').classList.add('hide'); $('#ansBox').textContent=''; }
+  $('#askFollow').classList.toggle('hide',!a.turns); $('#askCopy').classList.toggle('hide',!a.last); renderThumbs(); }
+function openStudy(i){
+  if(i===st.si&&st.nv) return;
+  if(AK.ctl) AK.ctl.abort();
+  saveStudyState(); st.si=i; const s=curStudy();
+  st.series=s.series; fillSeriesMenu(); st.hover=null; st.active=0;
+  const S=(s.last&&s.series.includes(s.last))?s.last:bestSeries(s.series);
+  $('#selSeries').value=s.series.indexOf(S);
+  const mode=s.mode||'2d';
+  if(mode==='mpr' && ['ax','cor','sag'].filter(k=>viewMap(S,k)).length>1) setMPR(S);
+  else if(mode==='cmp' && s.series.filter(x=>x.dim[2]>=2&&!x.rgb).length>1) setCompare(st.grid);
+  else setSingle(S);
+  loadAskState(s); $('#askTplSel').dataset.user=''; $('#askKontras').dataset.user='';
+  renderPList();
+}
+function removeStudy(i){
+  const s=st.studies[i]; if(!s) return;
+  if(i===st.si){ if(AK.ctl) AK.ctl.abort(); (AK.imgs||[]).forEach(x=>URL.revokeObjectURL(x.url)); }
+  else (s.ask&&s.ask.imgs||[]).forEach(x=>URL.revokeObjectURL(x.url));
+  st.studies.splice(i,1);
+  for(const S of s.series) S.slices=[];
+  if(i===st.si){ st.si=-1;
+    if(st.studies.length) openStudy(Math.min(i,st.studies.length-1));
+    else { st.series=[]; st.nv=0; st.vps.forEach(v=>{ v.S=null; v.el.classList.add('hide'); }); AK.imgs=[]; renderThumbs(); $('#open').classList.remove('hide'); $('#prog').textContent=''; syncUI(); }
+  } else if(i<st.si) st.si--;
+  renderPList();
+}
+function addSeries(series){
+  const known=new Set(); for(const s of st.studies) for(const S of s.series) known.add(s.key+'§'+S.key);
+  const added=[];
+  for(const S of series){
+    let s=st.studies.find(x=>x.key===S.study);
+    if(!s){ s={key:S.study, pat:S.pat, series:[], mods:''}; st.studies.push(s); }
+    if(known.has(s.key+'§'+S.key)) continue;
+    initSeries(S); s.series.push(S); if(!added.includes(s)) added.push(s);
+  }
+  for(const s of added){ s.series.sort((a,b)=>a.no-b.no||b.dim[2]-a.dim[2]); s.mods=[...new Set(s.series.map(S=>S.mod).filter(Boolean))].join('/'); }
+  return added;
+}
+
+async function openFiles(files){
+  files=[...files]; if(!files.length) return;
+  const first=!st.studies.length, pr= first? $('#prog') : $('#plProg');
+  if(!first){ showPList(true); }
+  pr.innerHTML='Membaca…<div class="barw"><i></i></div>'; const bar=()=>pr.querySelector('i');
+  try{
+    const t0=performance.now();
+    const {series,stats}=await loadAll(files, async (i,n)=>{ pr.firstChild.textContent=`Mengekstrak & membaca ${i} / ${n} file…`; bar().style.width=(100*i/n)+'%'; await new Promise(r=>setTimeout(r)); }, {budget:budget(), coreSrc:document.getElementById('core').textContent});
+    if(!series.length){ pr.textContent = stats.compressed? `Tidak ada gambar yang bisa dibuka: ${stats.compressed} file terkompresi, jenis: ${Object.entries(stats.tsc||{}).map(([k,n])=>(TSNAME[k]||k)+' ('+n+')').join(', ')}. Jenis ini belum didukung.` : 'Tidak ditemukan gambar DICOM di file tersebut.'; return; }
+    const added=addSeries(series);
+    pr.textContent='';
+    if(!added.length){ toast('Pasien/seri ini sudah ada di daftar'); renderPList(); return; }
+    $('#open').classList.add('hide'); lastPortrait=portrait();
+    openStudy(st.studies.indexOf(added[0]));
+    let msg=`${added.length>1?added.length+' pasien/studi, ':''}${stats.img} gambar, ${series.length} seri (${((performance.now()-t0)/1000).toFixed(1)} dtk)`;
+    if(stats.ds>1) msg+=` · resolusi 1/${stats.ds} untuk hemat memori`;
+    if(stats.compressed) msg+=` · ${stats.compressed} file terkompresi dilewati`;
+    toast(msg,4000);
+  }catch(err){ console.error(err); pr.textContent='Gagal membuka: '+err.message; }
+}
+$('#bPat').onclick=()=>showPList($('#plist').classList.contains('hide'));
+$('#plClose').onclick=()=>showPList(false);
+$('#plAddF').onclick=()=>$('#inFiles').click();
+$('#plAddD').onclick=()=>$('#inDir').click();
+$('#bPickFiles').onclick=()=>$('#inFiles').click();
+$('#bPickDir').onclick=()=>$('#inDir').click();
+$('#inFiles').onchange=e=>{ openFiles(e.target.files); e.target.value=''; };
+$('#inDir').onchange=e=>{ openFiles(e.target.files); e.target.value=''; };
+const opEl=$('#open');
+async function walk(entry,out){ if(entry.isFile) out.push(await new Promise((r,j)=>entry.file(r,j)));
+  else if(entry.isDirectory){ const rd=entry.createReader(); let b; do{ b=await new Promise((r,j)=>rd.readEntries(r,j)); for(const x of b) await walk(x,out); }while(b.length); } }
+addEventListener('dragover',e=>{ e.preventDefault(); opEl.classList.add('drag'); });
+addEventListener('dragleave',e=>{ if(!e.relatedTarget) opEl.classList.remove('drag'); });
+addEventListener('drop',async e=>{ e.preventDefault(); opEl.classList.remove('drag');
+  const items=[...(e.dataTransfer.items||[])].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+  if(items.length){ const out=[]; (st.studies.length?$('#plProg'):$('#prog')).textContent='Membaca folder…'; for(const it of items) await walk(it,out); openFiles(out); } else openFiles(e.dataTransfer.files); });
+
+/* ---------- Tanya Claude ---------- */
+const DEF_FMT=`Bahasa Indonesia gaya ekspertise radiologi (istilah medis lazim Latin/Inggris).
+Seluruh draf dalam SATU blok kode (\`\`\`).
+"TS Yth," tidak diikuti enter: satu baris dengan kalimat header "Pemeriksaan ...". Satu baris kosong setelah header, lalu temuan satu baris per organ/temuan.
+Baris temuan abnormal ditaruh di atas baris organ normal, atau ditulis di dalam baris organ yang bersangkutan (mis. "Hepar : ukuran membesar 16,2 cm, ...", frasa normal yang bertentangan dibuang).
+Kesan: judul "Kesan" (CT kepala memakai "Kesimpulan :"), satu poin per baris tanpa nomor; organ normal tidak disebut di kesan; massa ditulis "... dengan detail tersebut diatas".
+Pneumonia ditulis "Pneumonia" saja. Staging malignansi memakai "(AJCC Staging 9th edition T.. N.. M..)" di baris paling akhir kesan.
+Nilai HU ditulis "(138 HU)". Hepar > 15 cm = "ukuran membesar N cm" → kesan "Hepatomegaly". Ektasis PCS ringan/sedang/berat → "Hidronefrosis ringan/sedang/berat", dilatasi ureter → "hidroureter".
+Bila KGB tidak disebut = tidak ada pembesaran KGB (pakai baris KGB negatif template).`;
+const TPL={
+ ct_abd:{name:'MSCT Abdomen', re:/abd|abdomen|pelvis|hepar|whole/i, txt:`TS Yth, Pemeriksaan MSCT Abdomen Irisan axial reformatted coronal dan sagital {KONTRAS} :
+
+Tak tampak gambaran massa di cavum abdomen maupun cavum pelvis{KONTRAS_ENH}
+Hepar : ukuran normal, densitas normal, tak tampak pelebaran IHBD/EHBD, v.porta/hepatica normal, tak tampak massa/nodul
+GB : ukuran normal, densitas normal, tak tampak massa/batu/kista
+Pancreas : ukuran normal, densitas parenkim normal, tak tampak massa/kista
+Lien : ukuran normal, densitas parenkim normal, tak tampak massa/kista
+Ren kanan : ukuran normal, densitas parenkim normal, tak tampak ektasis pelviocalyceal system, tak tampak massa/batu/kista
+Ren kiri : ukuran normal, densitas parenkim normal, tak tampak ektasis pelviocalyceal system, tak tampak massa/batu/kista
+Buli : terisi cukup cairan, tak tampak penebalan dinding/batu/massa
+{PELVIS}
+Tak tampak densitas cairan bebas extraluminal pada cavum abdomen dan cavum pleura kanan kiri
+Tak tampak pembesaran KGB locoregional
+Tak tampak proses osteolitik/osteoblastik
+
+Kesan
+(bila tidak ada kelainan: Tak tampak gambaran massa intra abdomen)`},
+ stono:{name:'MSCT Stonografi', re:/stono|urolog|kub|batu/i, txt:`TS Yth, MSCT Stonografi Irisan axial reformatted coronal dan sagital tanpa kontras :
+
+Ginjal Kanan :
+- Ukuran : [AP x ML x CC] cm
+- Tak tampak kalsifikasi
+- Tak tampak ectasis PCS
+- Tak tampak batu di perjalanan ureter
+Ginjal Kiri :
+- Ukuran : [AP x ML x CC] cm
+- Tak tampak kalsifikasi
+- Tak tampak ectasis PCS
+- Tak tampak batu di perjalanan ureter
+Bladder :
+- Bentuk normal, batas mucosa serta dinding baik
+- Tak tampak batu di dalamnya
+Tak tampak gambaran massa di cavum abdomen maupun cavum pelvis
+Hepar : ukuran normal, densitas normal, tak tampak pelebaran IHBD/EHBD, tak tampak massa/nodul
+GB : ukuran normal, densitas normal, tak tampak massa/batu/kista
+Pancreas : ukuran normal, densitas parenkim normal, tak tampak massa/kista
+Lien : ukuran normal, densitas parenkim normal, tak tampak massa/kista
+{PELVIS}
+Tak tampak densitas cairan bebas extraluminal pada cavum abdomen dan cavum pleura kanan kiri
+Tak tampak pembesaran KGB locoregional
+Tak tampak proses osteolitik/osteoblastik
+
+Kesan`},
+ ct_thx:{name:'MSCT Thorax', re:/thorax|thx|chest|paru|lung/i, txt:`TS Yth, Pemeriksaan MSCT Thorax Irisan axial reformatted coronal dan sagital {KONTRAS} :
+
+Tak tampak massa di paru kanan kiri/mediastinum{KONTRAS_ENH}
+Trachea dan main bronchus kanan kiri paten
+Jantung dan pembuluh darah besar tak tampak kelainan
+Tak tampak infiltrat/nodul/fibrosis di paru kanan kiri
+Tak tampak atelektasis/kolaps paru
+Tak tampak pembesaran KGB paratracheal, subcarina dan peribronchial
+Tak tampak densitas cairan di cavum pleura kanan kiri
+Tak tampak nodule di hepar maupun kelenjar adrenal kanan kiri
+Tak tampak proses osteolitik/osteoblastik
+
+Kesan`},
+ ct_thxabd:{name:'MSCT Thoracoabdominal', re:/thoraco|thx.?abd|thorax.?abd/i, txt:`(Gabungan template MSCT Thorax lalu MSCT Abdomen dalam satu bacaan; header: "TS Yth, Pemeriksaan MSCT Thorax - Abdomen Irisan axial reformatted coronal dan sagital {KONTRAS} :")`},
+ ct_head:{name:'MSCT Kepala', re:/head|kepala|brain|otak|cranial/i, txt:`TS Yth, Pemeriksaan MSCT Kepala Irisan axial reformatted coronal dan sagital {KONTRAS} :
+
+Tak tampak lesi hipodense/hiperdense pada parenkim otak{KONTRAS_ENH}
+Sulci dan gyri normal
+Sistem ventrikel dan cysterna normal
+Pons dan cerebellum normal
+Tak tampak kalsifikasi abnormal
+Tak tampak deviasi midline
+Orbita, mastoid dan sinus paranasalis kanan kiri tak tampak kelainan
+Calvaria normal
+Tak tampak proses osteolitik/osteoblastik
+
+Kesimpulan :
+
+Tak tampak infark perdarahan maupun proses desak massa pada parenkim otak
+(dengan kontras: Tak tampak infark, perdarahan, massa maupun proses infeksi pada parenkim otak)
+Aturan: lesi hipodense batas tegas = Chronic cerebral infarction; batas sebagian tidak tegas = Subacute; batas tidak tegas = Acute.`},
+ mri_ls:{name:'MRI Lumbosacral', re:/lumb|l-?spine|ls\b/i, txt:`TS, Yth. Hasil pemeriksaan MRI Lumbosacral tanpa kontras, MR myelografi :
+
+Alignment baik, curve normal
+Tak tampak listhesis maupun kompresi
+Tak tampak perubahan intensitas bone marrow
+Tak tampak loss of intense pada discus intervertebralis
+Level VL 1-2, VL 2-3, VL 3-4, VL 4-5, VL 5- VS 1 : tampak baik
+Tak tampak lesi hipo/hiperintense abnormal intramedula, dan extramedula
+Conus medularis berakhir pada L1-L2
+Tak tampak gambaran abses soft tissue
+MR Myelografi : tak tampak hambatan aliran liquor cerebrospinalis
+
+Kesan
+Aturan: level abnormal dikeluarkan dari baris "tampak baik" dan ditulis "Level VL x-y : tampak bulging disc disertai hipertrofi facet joint dan penebalan ligamentum flavum kanan kiri menyebabkan ... effacement ..."; curve melurus → kesan "Paralumbal muscle spasm" (paling akhir); loss of intense → "Degenerative disc disease".`},
+ mri_cerv:{name:'MRI Cervical', re:/cerv|c-?spine/i, txt:`TS, Yth. Hasil pemeriksaan MRI Cervical {KONTRAS}, MR myelografi :
+
+Alignment baik, curve normal
+Tak tampak listhesis maupun kompresi
+Tak tampak perubahan intensitas bone marrow
+Tak tampak loss of intense pada discus intervertebralis
+Level VC 2-3, VC 3-4, VC 4-5, VC 5-6, VC 6-7, VC 7- VTh 1 : tampak baik
+Tak tampak lesi hipo/hiperintense abnormal intramedula, dan extramedula
+Tak tampak gambaran abses soft tissue
+MR Myelografi : tak tampak hambatan aliran liquor cerebrospinalis
+
+Kesan
+(curve melurus → "Paracervical muscle spasm")`},
+ mri_head:{name:'MRI Kepala', re:/head|brain|kepala|otak|flair|dwi/i, txt:`TS, Yth Hasil MRI kepala sqeuence [sekuens yang dilakukan] {KONTRAS}:
+
+Tak tampak lesi hipointense / hiperintense di brain parenchyme yang ditandai dengan perubahan intensitas pada sekuens T1WI/T2WI/T2 FLAIR/ SWI maupun restricted diffusion area pada DWI
+Sulci dan gyri tampak normal
+Sistem ventrikel dan cysterna tampak baik
+Tak tampak deviasi midline struktur
+Pons dan cerebellum tampak baik
+Mastoid, orbita dan sinus paranasal kanan kiri tampak baik
+(bila MRA: MR Angiography : Circullus willisi tampak patent, tak tampak aneurysma maupun vascular malformation)
+
+Kesan
+Tak tampak infark, perdarahan, maupun massa pada parenkim otak
+(dengan kontras: Tak tampak infark, perdarahan, massa maupun proses infeksi pada parenkim otak)`},
+ mri_genu:{name:'MRI Genu', re:/knee|genu|lutut/i, txt:`TS, Yth. Hasil pemeriksaan MRI Genu [kanan/kiri] irisan axial T1FSE, T2FrFSE, PDFatSat FSE, Sagittal T2FrFSE, PD Fatsat FSI, Coronal T2FrFSE, PD FatSat FSE :
+
+Tak tampak tear ACL dan PCL
+Tak tampak anterior/posterior drawer sign
+Tak tampak buckling PCL sign
+Lateral dan medial meniscus normal
+Tak tampak fraktur maupun dislokasi
+Tak tampak bone bruise maupun bone marrow edema
+Tak tampak kelainan pada medial dan lateral collateral ligament
+Tendon quadriceps femoris dan tendon patellar normal
+
+Kesan`},
+ mri_pelvis:{name:'MRI Pelvis', re:/pelvis|pelvic|uterus|prostat|rectum|perianal/i, txt:`TS, Yth. Hasil pemeriksaan MRI Pelvis irisan axial T1, T2, Coronal T1, T2Fatsat, Sagittal T2 {KONTRAS} :
+
+Pelvic inlet tampak normal
+Bowel structure tampak baik, tak tampak penebalan dinding, tak tampak massa
+{PELVIS_MRI}
+Buli : terisi cukup cairan, mucosa outline regular, tak tampak massa/ batu
+Tak tampak pembesaran KGB
+Tulang - tulang tampak baik, celah dan permukaan sendi tampak baik
+Tak tampak perubahan intensitas bone marrow
+
+Kesan`},
+ mri_abd:{name:'MRI Abdomen + MRCP', re:/abd|mrcp|liver|hepar|haste|trufi|dixon|opp|vibe/i, txt:`TS, Yth, Hasil pemeriksaan MRI abdomen irisan axial, coronal, [sekuens], MRCP {KONTRAS} :
+
+Hepar : ukuran normal, intensitas normal, tepi rata sudut tajam, sistem billier tampak normal, vena porta/vena hepatica normal, tak tampak nodul yang hipointense/hiperintense
+GB : ukuran normal, intensitas normal, tak tampak massa/batu
+Pancreas : ukuran normal, intensitas normal, tak tampak pelebaran ductus, tak tampak massa /kista
+Lien : ukuran normal, intensitas normal, tak tampak massa/kista
+Ginjal kanan : ukuran normal, tak tampak ectasis pelviocalyceal sistem, tak tampak batu/massa/kista
+Ginjal kiri : ukuran normal, tak tampak ectasis pelviocalyceal sistem, tak tampak batu/massa/kista
+MRCP : CBD, CHD dan ductus pancreaticus tampak normal, tak tampak filling defect
+
+Kesan`},
+ umum:{name:'Lainnya (tanpa template baku)', re:/$^/, txt:`(Tidak ada template baku: susun header "TS Yth, Pemeriksaan <jenis> ... :", baris temuan normal yang lazim untuk pemeriksaan ini, lalu Kesan.)`}
+};
+function fillTpl(key){
+  const S=AV()&&AV().S, sex=(S&&S.pat.sex)||'', kon=$('#askKontras').value, enh=/dengan/.test(kon);
+  let t=(LS('dv_tpl_'+key)||TPL[key].txt);
+  t=t.replace(/\{KONTRAS\}/g,kon).replace(/\{KONTRAS_ENH\}/g, enh?' yang pada pemberian kontras tak tampak abnormal contrast enhancement':'')
+   .replace(/\{PELVIS\}/g, sex==='M'?'Prostat : ukuran normal, densitas parenkim normal, tak tampak massa/kalsifikasi': sex==='F'?'Uterus : ukuran normal, densitas normal, tak tampak massa\nAdnexa : tak tampak massa solid/kistik':'(Prostat bila laki-laki / Uterus dan Adnexa bila perempuan)')
+   .replace(/\{PELVIS_MRI\}/g, sex==='M'?'Prostat : ukuran normal, tak tampak massa':'Uterus : ukuran normal, posisi anteflexy, tak tampak massa/kista/kalsifikasi\nCervix uteri tampak baik\nVagina tampak baik\nOvarium kanan kiri tak tampak massa/kista');
+  return t;
+}
+function guessTpl(){
+  const S=AV()&&AV().S; if(!S) return 'umum';
+  const txt=[$('#askExam').value,S.pat.desc,S.desc].join(' '), mr=S.mod==='MR';
+  const order = mr ? ['mri_ls','mri_cerv','mri_genu','mri_head','mri_pelvis','mri_abd'] : ['stono','ct_thxabd','ct_head','ct_thx','ct_abd'];
+  for(const k of order) if(TPL[k].re.test(txt)) return k;
+  return mr?'umum':(S.mod==='CT'?'ct_abd':'umum');
+}
+(function initTpl(){ const s=$('#askTplSel'); for(const [k,v] of Object.entries(TPL)){ const o=document.createElement('option'); o.value=k; o.textContent=v.name; s.appendChild(o); }
+  s.onchange=()=>{ $('#askTpl').value=LS('dv_tpl_'+s.value)||TPL[s.value].txt; };
+  $('#askTpl').oninput=e=>LS('dv_tpl_'+s.value,e.target.value);
+  $('#askTplReset').onclick=()=>{ try{ localStorage.removeItem('dv_tpl_'+s.value); }catch(e){} $('#askTpl').value=TPL[s.value].txt; };
+  $('#askMode').onchange=e=>{ $('#askQLab').textContent = e.target.value==='q' ? 'Pertanyaan untuk Claude' : 'Temuan saya (masuk ke draf; yang tidak disebut/ditandai = normal)'; };
+})();
+function autoTpl(){ const k=$('#askKontras');
+  if(!k.dataset.user) k.value = st.series.some(x=>/arteri|venous|vena|portal|delay|c\+|kontras|contrast|\bpost\b|gd|gado/i.test(x.desc)) ? 'tanpa dan dengan kontras' : 'tanpa kontras';
+  const s=$('#askTplSel'); if(s.dataset.user) return; s.value=guessTpl(); s.onchange(); }
+$('#askKontras').addEventListener('change',e=>e.target.dataset.user=1);
+$('#askTplSel').addEventListener('mousedown',()=>$('#askTplSel').dataset.user=1);
+$('#askTplSel').addEventListener('touchstart',()=>$('#askTplSel').dataset.user=1);
+const AK={imgs:[], turns:null, ctl:null, sample:null, last:''};
+const LS=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } };
+$('#askFmt').value = LS('dv_fmt') || DEF_FMT;
+$('#askFmt').oninput=e=>LS('dv_fmt',e.target.value);
+$('#askFmtReset').onclick=()=>{ $('#askFmt').value=DEF_FMT; LS('dv_fmt',DEF_FMT); };
+(async()=>{ try{ if(!window.claude||!claude.use) return; const s=await claude.use('sample'); if(!s) return; AK.sample=s;
+  let lim=null; try{ lim=await s.limits(); }catch(e){} AK.maxImg = lim&&lim.images ? lim.images.maxCount : 0;
+  $('#bAsk').classList.remove('hide'); }catch(e){} })();
+
+function exportVp(v,maxSide=1100){
+  let cw=v.cv.clientWidth||512, ch=v.cv.clientHeight||512;
+  if(v.zoom===1&&!v.px&&!v.py){ const g=geom(v), a=(g.W)/(g.H); cw=ch*Math.min(Math.max(a*1.08,0.5),2); v.px=0; }
+  const k=maxSide/Math.max(cw,ch);
+  const W=Math.round(cw*k), H=Math.round(ch*k), c=document.createElement('canvas'); c.width=W; c.height=H;
+  const sv={cv:v.cv,ctx:v.ctx,px:v.px,py:v.py};
+  Object.assign(v,{cv:c,ctx:c.getContext('2d'),_W:W,_H:H,px:v.px*k,py:v.py*k});
+  try{ drawVp(v,true); } finally { Object.assign(v,sv); v._W=v._H=0; }
+  return new Promise(r=>c.toBlob(r,'image/jpeg',0.9));
+}
+function measText(v){
+  const S=v.S, g=geom(v), out=[];
+  for(const mm of S.meas){ if(mm.vk!==v.k||mm.pos!==slicePos(v)) continue;
+    if(mm.t==='len'){ out.push('jarak '+(Math.hypot((mm.b[0]-mm.a[0])*g.su,(mm.b[1]-mm.a[1])*g.sv)/10).toFixed(2)+' cm'); }
+    else if(mm.t==='roi'&&mm._s&&mm._s.n){ const s=mm._s; out.push('ROI rerata '+s.mean.toFixed(1)+'±'+s.sd.toFixed(1)+(S.mod==='CT'?' HU':'')+', luas '+(s.area/100).toFixed(2)+' cm²'); }
+    else if(mm.t==='pt'){ const P=getPlane(v), iu=Math.floor(mm.a[0]), iv=Math.floor(mm.a[1]); if(P&&iu>=0&&iv>=0&&iu<g.nu&&iv<g.nv) out.push('titik '+P.data[iv*g.nu+iu]+(S.mod==='CT'?' HU':' SI')); } }
+  return out.join('; ');
+}
+function renderThumbs(){
+  const t=$('#thumbs'); t.innerHTML='';
+  AK.imgs.forEach((im,i)=>{ const d=document.createElement('div'); d.className='th';
+    d.innerHTML=`<img src="${im.url}"><span>${i+1}. ${im.short}</span><button title="Hapus">×</button>`;
+    d.querySelector('button').onclick=()=>{ URL.revokeObjectURL(im.url); AK.imgs.splice(i,1); renderThumbs(); };
+    t.appendChild(d); });
+  const max=AK.maxImg||0;
+  $('#askCount').textContent = AK.imgs.length ? `${AK.imgs.length} slice ditandai${max?` (maks ${max} per kiriman)`:''}.` : 'Belum ada slice. Pilih panel, cari slice penting, lalu tekan "Tandai slice aktif" (atau tombol K).';
+}
+async function markSlice(){
+  const v=AV(); if(!v||!v.S||!v.m) return;
+  if(AK.maxImg && AK.imgs.length>=AK.maxImg){ toast(`Maksimal ${AK.maxImg} slice per kiriman`); return; }
+  const S=v.S, blob=await exportVp(v), N=S.dim[v.m.aN], idx=viewIndex(v)+1;
+  const vname=S.geom?VIEWDEF[v.k].name:'Gambar';
+  const sl = st.slab.mm>0 ? ({max:'MIP',min:'MinIP',avg:'rata-rata'}[st.slab.mode]+' '+st.slab.mm+' mm') : '';
+  const desc=`${vname} slice ${idx}/${N}, seri "${S.desc}"${S.mod?' ('+S.mod+')':''}, window W${Math.round(S.wl.ww)}/L${Math.round(S.wl.wc)}${sl?', '+sl:''}`;
+  const m=measText(v);
+  AK.imgs.push({blob, url:URL.createObjectURL(blob), short:`${vname.slice(0,3)} ${idx}`, desc: desc+(m?'; pengukuran: '+m:'')});
+  if(!$('#askExam').value){ const P=S.pat; $('#askExam').value=(P.desc||'')||(S.mod==='CT'?'MSCT':S.mod==='MR'?'MRI':S.mod); }
+  autoTpl();
+  renderThumbs(); toast('Slice ditandai ('+AK.imgs.length+')');
+}
+function renderAns(text){
+  const box=$('#ansBox'); box.classList.remove('hide'); box.innerHTML='';
+  const parts=text.split(/```[a-zA-Z]*\n?/);
+  parts.forEach((p,i)=>{ if(!p) return;
+    if(i%2===1){ const d=document.createElement('div'); d.className='code'; d.textContent=p.replace(/\n$/,'');
+      const b=document.createElement('button'); b.textContent='Salin'; b.onclick=()=>copyText(d.firstChild.textContent,b); d.appendChild(b); box.appendChild(d); }
+    else { const s=document.createElement('span'); s.innerHTML=p.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); box.appendChild(s); } });
+}
+async function copyText(t,btn){ try{ await navigator.clipboard.writeText(t); toast('Disalin'); if(btn){ const o=btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=o,1200);} }catch(e){ toast('Tidak bisa menyalin otomatis — blok teksnya lalu salin manual'); } }
+function draftOf(t){ const m=t.match(/```[a-zA-Z]*\n?([\s\S]*?)```/); return m?m[1].replace(/\n$/,''):t; }
+function buildPrompt(){
+  const mode=$('#askMode').value, exam=$('#askExam').value.trim()||'(tidak disebutkan)', clin=$('#askClin').value.trim(), q=$('#askQ').value.trim();
+  const S=AV()&&AV().S, sex=S&&S.pat.sex==='M'?'laki-laki':S&&S.pat.sex==='F'?'perempuan':'';
+  const list=AK.imgs.length?AK.imgs.map((im,i)=>`Gambar ${i+1}: ${im.desc}`).join('\n'):'(tidak ada gambar terlampir)';
+  const tplKey=$('#askTplSel').value, tpl=fillTpl(tplKey);
+  const head=`Kamu membantu dokter spesialis radiologi menyusun ekspertise. ${AK.imgs.length?`Terlampir ${AK.imgs.length} key image yang ditandai dokter (slice yang dianggap penting). Overlay gambar memuat window, label orientasi (R/L/A/P/S/I; sisi kiri layar = kanan pasien pada aksial/koronal), nomor slice, penggaris, dan hasil ukur.`:''}
+
+Pemeriksaan: ${exam} (${$('#askKontras').value})${sex?'\nPasien: '+sex:''}${clin?'\nInfo klinis: '+clin:''}
+${list}`;
+  if(mode==='q') return `${head}
+
+Pertanyaan dokter: ${q||'(kosong)'}
+Jawab ringkas berdasarkan gambar dan data di atas.`;
+  if(mode==='find') return `${head}
+${q?'\nTemuan dokter: '+q+'\n':''}
+Tugas: daftar usulan temuan yang terlihat pada gambar terlampir: nomor gambar, lokasi, deskripsi singkat, tingkat keyakinan (yakin/mungkin/ragu), dan diagnosis banding singkat bila relevan. Tidak perlu draf bacaan. Jangan mengarang ukuran; pakai hasil ukur yang tercantum.`;
+  return `${head}
+
+TEMUAN DOKTER (sumber utama, wajib dimasukkan ke draf sesuai maksudnya; ukuran/angka dipakai persis):
+${q||'(dokter tidak menulis temuan; gunakan kelainan yang terlihat pada slice yang ditandai)'}
+
+Tugas: susun DRAF EKSPERTISE LENGKAP memakai template di bawah.
+Aturan pengisian:
+1. Mulai dari template. Semua organ/area yang TIDAK disebut dokter dan TIDAK tampak abnormal pada slice yang ditandai dianggap NORMAL: pakai kalimat normal template apa adanya. Jangan menulis "[nilai sendiri]" atau catatan sejenis di dalam draf.
+2. Temuan dokter menggantikan/mengubah baris normal yang bersangkutan (atau ditulis sebagai baris temuan di atas baris organ), dengan gaya kalimat ekspertise yang rapi. Bila temuan dokter berbeda dengan kesanmu dari gambar, ikuti dokter.
+3. Slice yang ditandai: deskripsikan kelainan yang terlihat bila belum disebut dokter, hanya bila yakin. Bila ragu, jangan masukkan ke draf; sebut di bagian "Catatan" di luar blok kode. Pakai hasil ukur (jarak, ROI/HU, titik HU) bila relevan.
+4. Jangan mengarang ukuran/angka; bila temuan butuh ukuran yang tidak tersedia tulis "[ukur]".
+5. Kesan hanya berisi temuan abnormal (organ normal tidak disebut); bila tidak ada kelainan pakai kesan normal template. Baris petunjuk dalam kurung di template (mis. "(bila ...)", "Aturan: ...") jangan disalin ke draf.
+
+Keluaran:
+- Draf ekspertise dalam SATU blok kode (\`\`\`), tanpa nama pasien.
+- Setelah blok kode, "Catatan" maksimal 3 baris: temuan meragukan di gambar yang tidak dimasukkan, atau hal yang perlu dicek dokter. Tanpa basa-basi lain.
+
+TEMPLATE (${TPL[tplKey].name}):
+${tpl}
+
+ATURAN GAYA:
+${$('#askFmt').value.trim()}`;
+}
+async function ask(input, images){
+  if(!AK.sample){ toast('Fitur ini hanya tersedia saat viewer dibuka di Claude'); return; }
+  AK.ctl=new AbortController();
+  $('#askSend').disabled=true; $('#askFSend').disabled=true; $('#askStop').classList.remove('hide'); $('#askCopy').classList.add('hide');
+  const box=$('#ansBox'); box.classList.remove('hide'); box.textContent='Claude sedang melihat gambar…';
+  try{
+    const opts={signal:AK.ctl.signal, modelTier:'complex', cache:false, onText:({text})=>renderAns(text)};
+    if(images&&images.length) opts.images=images;
+    const r=await AK.sample(input,opts);
+    AK.last=r.text; renderAns(r.text); AK.turns=(Array.isArray(input)?input:[{role:'user',content:input}]).concat([{role:'assistant',content:r.text}]);
+    if(r.truncated) toast('Jawaban terpotong — kurangi jumlah slice atau minta lebih ringkas',4000);
+    $('#askCopy').classList.remove('hide'); $('#askFollow').classList.remove('hide');
+  }catch(e){
+    const msg={cancelled:'',not_granted:'Izin memakai Claude ditolak untuk halaman ini.',sampling_disabled:'Claude tidak tersedia untuk akun ini.',
+      rate_limited:'Terlalu banyak permintaan / batas pemakaian tercapai. Coba lagi nanti.',session_expired:'Sesi habis, silakan login ulang.',
+      images_unavailable:'Tampilan ini tidak bisa mengirim gambar ke Claude.',image_rejected:'Gambar ditolak (ukuran/format).',
+      refused:'Claude menolak permintaan ini. Ubah pertanyaannya.',prompt_too_large:'Permintaan terlalu besar — kurangi slice.'}[e&&e.code];
+    if(e&&e.text){ renderAns(e.text); } else box.textContent='';
+    if(msg!=='' ) toast(msg||('Gagal: '+(e&&e.message||e)),4500);
+    if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code)) $('#bAsk').classList.add('hide');
+  }finally{ $('#askSend').disabled=false; $('#askFSend').disabled=false; $('#askStop').classList.add('hide'); AK.ctl=null; }
+}
+function showAsk(on){ if(on) autoTpl(); $('#ask').classList.toggle('hide',!on); document.body.classList.toggle('asking',on); $('#bAsk').classList.toggle('on',on); requestAnimationFrame(resize); }
+$('#bAsk').onclick=()=>showAsk($('#ask').classList.contains('hide'));
+$('#askClose').onclick=()=>showAsk(false);
+$('#askMark').onclick=markSlice;
+$('#askClearImgs').onclick=()=>{ AK.imgs.forEach(i=>URL.revokeObjectURL(i.url)); AK.imgs=[]; renderThumbs(); };
+$('#askStop').onclick=()=>AK.ctl&&AK.ctl.abort();
+$('#askCopy').onclick=e=>copyText(draftOf(AK.last),e.target);
+$('#askSend').onclick=()=>{ if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; } AK.turns=null; $('#askFollow').classList.add('hide'); ask(buildPrompt(), AK.imgs.length?AK.imgs.map(i=>i.blob):null); };
+$('#askFSend').onclick=()=>{ const q=$('#askF').value.trim(); if(!q||!AK.turns) return; $('#askF').value='';
+  ask(AK.turns.concat([{role:'user',content:q+'\n\n(Gambar sudah dilihat pada giliran pertama; jawab berdasarkan pengamatanmu sebelumnya. Bila draf berubah, tulis ulang draf lengkap dalam satu blok kode.)'}])); };
+$('#askF').onkeydown=e=>{ if(e.key==='Enter') $('#askFSend').click(); };
+addEventListener('keydown',e=>{ if((e.key==='k'||e.key==='K')&&!e.metaKey&&!e.ctrlKey&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&AV()&&AV().S){ if($('#ask').classList.contains('hide')) showAsk(true); markSlice(); } });
+
+renderPList(); fillWinMenu(); syncUI();
+</script>
+<script>if('serviceWorker' in navigator && location.protocol==='https:'){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }</script>
+</body>
+</html>
