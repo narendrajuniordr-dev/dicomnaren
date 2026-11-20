@@ -60,29 +60,46 @@ button:disabled{opacity:.35;cursor:default}
 #plProg .barw{height:5px;background:#1d232b;border-radius:3px;overflow:hidden;margin-top:4px}#plProg .barw i{display:block;height:100%;width:0;background:var(--acc)}
 @media (min-width:761px){body.plist #app{margin-left:300px}}
 #ask{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);z-index:8;display:flex;flex-direction:column;box-shadow:-8px 0 24px #0008}
+#note{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);z-index:8;display:flex;flex-direction:column;box-shadow:-8px 0 24px #0008}
 #ask header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#note header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
 #ask header b{flex:1;font-size:15px}
+#note header b{flex:1;font-size:15px}
 #ask .body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+#note .body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
 #ask label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
+#note label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
 #ask input,#ask textarea,#ask select{width:100%;font:inherit;color:var(--tx);background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:6px 8px}
+#note input,#note textarea,#note select{width:100%;font:inherit;color:var(--tx);background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:6px 8px}
 #ask select{height:32px;max-width:none}
+#note select{height:32px;max-width:none}
 #ask textarea{resize:vertical;min-height:54px}
+#note textarea{resize:vertical;min-height:54px}
 #thumbs{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;min-height:20px;padding-bottom:4px;flex:none}#thumbs:not(:empty){min-height:108px}
 #thumbs .th{position:relative;flex:none;width:84px}
 #thumbs img{width:84px;height:84px;object-fit:contain;background:#000;border:1px solid #2c343e;border-radius:4px;display:block}
 #thumbs .th span{font-size:10px;color:var(--mut);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #thumbs .th button{position:absolute;top:2px;right:2px;height:20px;width:20px;padding:0;border-radius:10px;font-size:12px;line-height:1}
 #ask .rowb{display:flex;gap:6px;flex-wrap:wrap}
+#note .rowb{display:flex;gap:6px;flex-wrap:wrap}
 #ask .pri,#plist .pri{background:var(--acc);color:#04201c;border-color:var(--acc);font-weight:700}
+#note .pri{background:var(--acc);color:#04201c;border-color:var(--acc);font-weight:700}
 #ansBox{background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;min-height:40px;line-height:1.45}
 #ansBox .code{background:#000;border:1px solid #2c343e;border-radius:6px;padding:8px;margin:6px 0;font:12.5px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;position:relative}
 #ansBox .code button{position:absolute;top:4px;right:4px;height:24px;font-size:11px;padding:0 8px}
 #ask .warn{font-size:11.5px;color:#d9a35b}
+#note .warn{font-size:11.5px;color:#d9a35b}
 #ask details summary{cursor:pointer;color:var(--mut);font-size:12px}
+#note details summary{cursor:pointer;color:var(--mut);font-size:12px}
 @media (min-width:761px){body.asking #app{margin-right:400px}}
 @media (max-width:760px){#ask{width:100%;top:auto;height:78%;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0}}
+@media (max-width:760px){#note{width:100%;top:auto;height:78%;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0}}
+#askHandle{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 18px 8px;border-radius:14px;background:#14181dcc;border:1px solid #2c343e;color:var(--acc);font-size:12px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+#askHandle i{display:block;width:38px;height:4px;border-radius:2px;background:var(--acc);opacity:.8}
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d232b;border:1px solid var(--line);padding:8px 14px;border-radius:8px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
+
+#noteTxt{flex:1;min-height:300px;font:13px/1.5 ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
@@ -116,6 +133,7 @@ button:disabled{opacity:.35;cursor:default}
       <button id="bClear" title="Hapus semua ukuran">Hapus ukur</button>
       <button id="bReset" title="Reset zoom/geser (R)">Reset</button>
       <button id="bSave" title="Simpan/bagikan gambar tampilan aktif tanpa identitas [Shift+S]">Simpan</button>
+      <button id="bNote" title="Catatan pasien [N]">Catatan</button>
       <button id="bAsk" class="hide" title="Kirim slice yang ditandai ke Claude untuk usulan temuan & draf bacaan">Tanya Claude</button>
       <button id="bFull" title="Layar penuh [F]">⛶</button>
       <button id="bHelp">?</button></div></div>
@@ -145,7 +163,7 @@ button:disabled{opacity:.35;cursor:default}
     <tr><td>Klik kanan seret</td><td>Zoom &nbsp;·&nbsp; klik tengah seret = geser</td></tr>
     <tr><td>↑ ↓ / PgUp PgDn</td><td>Ganti slice (Shift = 10 slice)</td></tr>
     <tr><td>L · O · H</td><td>Ukur panjang · ROI bulat · densitas HU</td></tr><tr><td>S · W · G · Z · X</td><td>Scroll · W/L · Geser · Zoom · Silang</td></tr><tr><td>1 – 0</td><td>Preset window CT (1 soft tissue, 2 paru, 3 tulang, 4 mediastinum, 5 otak, 6 subdural, 7 stroke, 8 hepar, 9 CTA, 0 HRCT). MRI: 1 default, 2 auto</td></tr><tr><td>Delete</td><td>Hapus ukuran terakhir di slice aktif</td></tr><tr><td>M · B</td><td>MPR · Banding (ON/OFF)</td></tr>
-    <tr><td>F</td><td>Layar penuh (masuk/keluar)</td></tr><tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
+    <tr><td>N · Catatan</td><td>Catatan per pasien: sisipkan template bacaan, tulis, salin. Di HP: geser pegangan bawah ke atas (versi tanpa Tanya Claude)</td></tr><tr><td>F</td><td>Layar penuh (masuk/keluar)</td></tr><tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
     <tr><td>Edit ukuran</td><td>Seret ujung garis ukur untuk mengubahnya. ROI: seret titik tengah untuk memindah, titik tepi untuk mengubah ukuran</td></tr><tr><td>Garis silang</td><td>Seret garis hijau (MPR) untuk memindah bidang lain; seret titik potongnya untuk memindah keduanya</td></tr><tr><td>HU · ROI</td><td>HU = densitas satu titik (plus rerata 3×3). ROI = lingkaran: rerata ± SD, min/maks, luas</td></tr><tr><td>Tanya Claude · K</td><td>Tandai slice aktif (K), isi pemeriksaan & klinis, lalu kirim. Claude memberi usulan temuan + draf bacaan; tombol Salin menyalin drafnya</td></tr><tr><td>Slab</td><td>MIP untuk nodul/pembuluh, MinIP untuk saluran napas</td></tr>
     <tr><td>Simpan</td><td>Menyimpan tampilan aktif sebagai PNG tanpa nama pasien; di ponsel bisa langsung dibagikan</td></tr>
   </table>
@@ -186,6 +204,17 @@ button:disabled{opacity:.35;cursor:default}
   <div id="plItems"></div>
   <div class="note" style="padding:8px 10px">Pasien yang terbuka disimpan sementara di browser HP ini (maks. 24 jam) agar tidak hilang saat layar dilipat/dibuka. Hapus (×) pasien yang sudah selesai agar memori dan penyimpanan tetap lega. Geser panel ke kiri untuk menutup.</div>
 </div>
+<div id="note" class="hide">
+  <header><b id="noteTitle">Catatan</b><button id="noteClose">Tutup</button></header>
+  <div class="body">
+    <div class="rowb" style="flex-wrap:nowrap"><div style="flex:1"><label>Template</label><select id="noteTpl"></select></div>
+      <div style="flex:none;width:150px"><label>Kontras</label><select id="noteKon"><option value="tanpa kontras">tanpa kontras</option><option value="tanpa dan dengan kontras">tanpa dan dengan kontras</option></select></div></div>
+    <div class="rowb"><button id="noteIns" class="pri">Sisipkan template</button><button id="noteCopy">Salin semua</button><button id="noteClear">Kosongkan</button></div>
+    <textarea id="noteTxt" rows="16" placeholder="Tulis bacaan / catatan untuk pasien ini… (tersimpan otomatis)"></textarea>
+    <div class="warn">Catatan tersimpan otomatis per pasien di perangkat ini saja, dan ikut terhapus saat pasien dihapus (×) atau setelah 24 jam.</div>
+  </div>
+</div>
+<div id="askHandle" class="hide"><i></i><span>Claude ▲</span></div>
 <div id="toast"></div>
 
 <script id="core">
@@ -1101,9 +1130,10 @@ function renderPList(){
     d.onclick=e=>{ if(e.target.tagName==='BUTTON') return; openStudy(i); if(innerWidth<761) showPList(false); };
     d.querySelector('button').onclick=()=>removeStudy(i);
     box.appendChild(d); });
+  if(typeof updAskHandle==='function') updAskHandle();
   $('#bPat').textContent='☰ Pasien'+(st.studies.length?' ('+st.studies.length+')':'');
 }
-function showPList(on){ $('#plist').classList.toggle('hide',!on); document.body.classList.toggle('plist',on); $('#bPat').classList.toggle('on',on); requestAnimationFrame(()=>{ if(st.nv) layout(); }); }
+function showPList(on){ $('#plist').classList.toggle('hide',!on); if(typeof updAskHandle==='function') setTimeout(updAskHandle,0); document.body.classList.toggle('plist',on); $('#bPat').classList.toggle('on',on); requestAnimationFrame(()=>{ if(st.nv) layout(); }); }
 function saveStudyState(){ const s=curStudy(); if(!s) return; s.last=AV()&&AV().S; s.mode=st.mode; s.ask={imgs:AK.imgs, exam:$('#askExam').value, clin:$('#askClin').value, q:$('#askQ').value, last:AK.last, turns:AK.turns}; }
 function loadAskState(s){ const a=s.ask||{imgs:[],exam:'',clin:'',q:'',last:'',turns:null};
   AK.imgs=a.imgs; AK.last=a.last; AK.turns=a.turns; $('#askExam').value=a.exam; $('#askClin').value=a.clin; $('#askQ').value=a.q;
@@ -1120,11 +1150,11 @@ function openStudy(i){
   if(mode==='mpr' && ['ax','cor','sag'].filter(k=>viewMap(S,k)).length>1) setMPR(S);
   else if(mode==='cmp' && s.series.filter(x=>x.dim[2]>=2&&!x.rgb).length>1) setCompare(st.grid);
   else setSingle(S);
-  loadAskState(s); $('#askTplSel').dataset.user=''; $('#askKontras').dataset.user='';
+  loadAskState(s); if(!$('#note').classList.contains('hide')) loadNote(); $('#noteTpl').dataset.user=''; $('#noteKon').dataset.user=''; $('#askTplSel').dataset.user=''; $('#askKontras').dataset.user='';
   renderPList();
 }
 function removeStudy(i){
-  const s=st.studies[i]; if(!s) return; dropStudyFromSources(s.key);
+  const s=st.studies[i]; if(!s) return; dropStudyFromSources(s.key); dropNote(s.key);
   if(i===st.si){ if(AK.ctl) AK.ctl.abort(); (AK.imgs||[]).forEach(x=>URL.revokeObjectURL(x.url)); }
   else (s.ask&&s.ask.imgs||[]).forEach(x=>URL.revokeObjectURL(x.url));
   st.studies.splice(i,1);
@@ -1380,7 +1410,7 @@ $('#askFmt').oninput=e=>LS('dv_fmt',e.target.value);
 $('#askFmtReset').onclick=()=>{ $('#askFmt').value=DEF_FMT; LS('dv_fmt',DEF_FMT); };
 (async()=>{ try{ if(!window.claude||!claude.use) return; const s=await claude.use('sample'); if(!s) return; AK.sample=s;
   let lim=null; try{ lim=await s.limits(); }catch(e){} AK.maxImg = lim&&lim.images ? lim.images.maxCount : 0;
-  $('#bAsk').classList.remove('hide'); }catch(e){} })();
+  $('#bAsk').classList.remove('hide'); updAskHandle(); }catch(e){} })();
 
 function exportVp(v,maxSide=1100){
   let cw=v.cv.clientWidth||512, ch=v.cv.clientHeight||512;
@@ -1493,7 +1523,9 @@ async function ask(input, images){
     if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code)) $('#bAsk').classList.add('hide');
   }finally{ $('#askSend').disabled=false; $('#askFSend').disabled=false; $('#askStop').classList.add('hide'); AK.ctl=null; }
 }
-function showAsk(on){ if(on) autoTpl(); $('#ask').classList.toggle('hide',!on); document.body.classList.toggle('asking',on); $('#bAsk').classList.toggle('on',on); requestAnimationFrame(resize); }
+function handleTarget(){ return $('#bAsk').classList.contains('hide') ? 'note' : 'ask'; }
+function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok); }
+function showAsk(on){ if(on){ autoTpl(); if(typeof showNote==='function'&&!$('#note').classList.contains('hide')) showNote(false); } setTimeout(updAskHandle,0); $('#ask').classList.toggle('hide',!on); document.body.classList.toggle('asking',on); $('#bAsk').classList.toggle('on',on); requestAnimationFrame(resize); }
 $('#bAsk').onclick=()=>showAsk($('#ask').classList.contains('hide'));
 $('#askClose').onclick=()=>showAsk(false);
 $('#askMark').onclick=markSlice;
@@ -1571,8 +1603,71 @@ function swipeClose(el, dir, onClose, handle, cond){
     else el.style.transform=''; });
 }
 swipeClose($('#plist'),'left',()=>showPList(false));
-swipeClose($('#ask'),'down',()=>showAsk(false),$('#ask header'),()=>innerWidth<761);
+/* ---------- catatan per pasien ---------- */
+const NOTE_TTL=24*3600e3;
+function notesAll(){ try{ return JSON.parse(localStorage.getItem('dv_note')||'{}'); }catch(e){ return {}; } }
+function notesPut(o){ try{ localStorage.setItem('dv_note',JSON.stringify(o)); }catch(e){} }
+(function purgeNotes(){ const o=notesAll(), now=Date.now(); let ch=false; for(const k in o) if(now-(o[k].t||0)>NOTE_TTL){ delete o[k]; ch=true; } if(ch) notesPut(o); })();
+function noteKey(){ const s=curStudy(); return s?s.key:null; }
+function loadNote(){ const k=noteKey(), s=curStudy(); $('#noteTxt').value = k&&notesAll()[k] ? notesAll()[k].text : '';
+  $('#noteTitle').textContent='Catatan'+(s&&s.pat.name?' — '+s.pat.name:''); }
+let _ntT=0;
+function saveNote(){ clearTimeout(_ntT); _ntT=setTimeout(()=>{ const k=noteKey(); if(!k) return; const o=notesAll(), txt=$('#noteTxt').value;
+  if(txt.trim()) o[k]={t:(o[k]&&o[k].t)||Date.now(), text:txt}; else delete o[k]; notesPut(o); },400); }
+function dropNote(key){ const o=notesAll(); if(o[key]){ delete o[key]; notesPut(o); } }
+function showNote(on){
+  if(on){ if(!$('#ask').classList.contains('hide')) showAsk(false); loadNote(); const s=$('#noteTpl'); if(!s.dataset.user){ s.value=guessTpl(); }
+    const k=$('#noteKon'); if(!k.dataset.user) k.value = st.series.some(x=>/arteri|venous|vena|portal|delay|c\+|kontras|contrast|\bpost\b|gd|gado/i.test(x.desc)) ? 'tanpa dan dengan kontras' : 'tanpa kontras'; }
+  $('#note').classList.toggle('hide',!on); document.body.classList.toggle('noting',on); $('#bNote').classList.toggle('on',on);
+  setTimeout(updAskHandle,0); requestAnimationFrame(()=>{ if(st.nv) layout(); }); }
+(function initNote(){ const s=$('#noteTpl'); for(const [k,v] of Object.entries(TPL)){ if(k==='umum') continue; const o=document.createElement('option'); o.value=k; o.textContent=v.name; s.appendChild(o); }
+  s.addEventListener('change',()=>s.dataset.user=1); $('#noteKon').addEventListener('change',e=>e.target.dataset.user=1);
+  $('#noteTxt').addEventListener('input',saveNote);
+  $('#bNote').onclick=()=>showNote($('#note').classList.contains('hide'));
+  $('#noteClose').onclick=()=>showNote(false);
+  $('#noteIns').onclick=()=>{ const ta=$('#noteTxt'), ak=$('#askKontras'), old=ak.value; ak.value=$('#noteKon').value;
+    let t=fillTpl(s.value); ak.value=old;
+    t=t.split('\n').filter(l=>!/^\s*\((bila|dengan kontras|curve|Prostat bila|Gabungan)/i.test(l)&&!/^Aturan:/i.test(l)).join('\n');
+    const P=curStudy()&&curStudy().pat, head=(P&&P.name?P.name+'\n\n':'');
+    const pos=ta.selectionStart??ta.value.length; const ins=(ta.value.trim()?'':head)+t;
+    ta.value=ta.value.slice(0,pos)+ins+ta.value.slice(pos); ta.focus(); ta.selectionStart=ta.selectionEnd=pos+ins.length; saveNote(); };
+  $('#noteCopy').onclick=e=>copyText($('#noteTxt').value,e.target);
+  $('#noteClear').onclick=()=>{ if(!$('#noteTxt').value) return; const old=$('#noteTxt').value; $('#noteTxt').value=''; saveNote(); toast('Catatan dikosongkan',1500); $('#noteTxt').dataset.undo=old; };
+  addEventListener('keydown',e=>{ if((e.key==='n'||e.key==='N')&&!e.metaKey&&!e.ctrlKey&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&curStudy()){ showNote($('#note').classList.contains('hide')); e.preventDefault(); } });
+})();
+
+/* ---------- pegangan bawah: geser ke atas membuka panel (Tanya Claude / Catatan) ---------- */
+const PANEL={ ask:{el:()=>$('#ask'), show:on=>showAsk(on)}, note:{el:()=>$('#note'), show:on=>showNote(on)} };
+(function(){ const hd=$('#askHandle'); let sy=0, on=false, H=0, wide=false, P=null, el=null;
+  hd.addEventListener('touchstart',e=>{ if(e.touches.length!==1) return; sy=e.touches[0].clientY; on=true; wide=innerWidth>=761; P=PANEL[handleTarget()]; el=P.el();
+    if(!wide){ if(handleTarget()==='ask') autoTpl(); else { loadNote(); } el.style.transition='none'; el.classList.remove('hide'); H=el.getBoundingClientRect().height; el.style.transform=`translateY(${H}px)`; } },{passive:true});
+  hd.addEventListener('touchmove',e=>{ if(!on) return; const dy=Math.max(0,sy-e.touches[0].clientY); if(!wide) el.style.transform=`translateY(${Math.max(0,H-dy)}px)`; e.preventDefault(); },{passive:false});
+  hd.addEventListener('touchend',e=>{ if(!on) return; on=false; const dy=sy-e.changedTouches[0].clientY;
+    if(wide){ if(dy>40||Math.abs(dy)<6) P.show(true); return; }
+    el.style.transition='transform .2s ease-out';
+    if(dy>60||Math.abs(dy)<6){ el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.transition='none'; el.style.transform=''; P.show(true); },200); }
+    else { el.style.transform=`translateY(${H}px)`; setTimeout(()=>{ el.classList.add('hide'); el.style.transition='none'; el.style.transform=''; },200); } });
+  hd.addEventListener('click',()=>{ if(!isTouch) PANEL[handleTarget()].show(true); });
+})();
+/* geser ke bawah dari mana saja di panel untuk menutup (HP) */
+function sheetDownClose(el, body, close){ let sy=0, sx=0, on=false, decided=false, drag=false;
+  el.addEventListener('touchstart',e=>{ if(innerWidth>=761||e.touches.length!==1) return;
+    sy=e.touches[0].clientY; sx=e.touches[0].clientX; on=true; decided=false; drag=false; el.style.transition='none'; },{passive:true});
+  el.addEventListener('touchmove',e=>{ if(!on) return; const dy=e.touches[0].clientY-sy, dx=e.touches[0].clientX-sx;
+    if(!decided){ if(Math.abs(dy)<8&&Math.abs(dx)<8) return; decided=true;
+      const ta=e.target.closest&&e.target.closest('textarea'); const inner = ta && ta.scrollTop>0;
+      const atTop = (body.scrollTop<=0 || !body.contains(e.target)) && !inner;
+      drag = dy>0 && Math.abs(dy)>Math.abs(dx) && atTop; if(!drag){ on=false; return; } }
+    if(drag){ el.style.transform=`translateY(${Math.max(0,dy)}px)`; e.preventDefault(); } },{passive:false});
+  el.addEventListener('touchend',e=>{ if(!on) return; on=false; if(!drag) return; const dy=e.changedTouches[0].clientY-sy;
+    el.style.transition='transform .18s ease-out';
+    if(dy>90){ el.style.transform='translateY(110%)'; setTimeout(()=>{ close(); el.style.transition='none'; el.style.transform=''; },180); }
+    else el.style.transform=''; });
+}
+sheetDownClose($('#ask'),$('#ask .body'),()=>showAsk(false));
+sheetDownClose($('#note'),$('#note .body'),()=>showNote(false));
 swipeClose($('#ask'),'right',()=>showAsk(false),null,()=>innerWidth>=761);
+swipeClose($('#note'),'right',()=>showNote(false),null,()=>innerWidth>=761);
 
 renderPList(); fillWinMenu(); syncUI(); restoreSession();
 /* ---------- logo & layar penuh ---------- */
