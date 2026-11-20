@@ -94,6 +94,12 @@ button:disabled{opacity:.35;cursor:default}
 @media (min-width:761px){body.asking #app{margin-right:400px}}
 @media (max-width:760px){#ask{width:100%;top:auto;height:78%;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0}}
 @media (max-width:760px){#note{width:100%;top:auto;height:78%;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0}}
+
+.markBtn{position:absolute;right:10px;bottom:50px;width:42px;height:42px;border-radius:11px;background:#14181dd9;border:1.5px solid var(--acc);color:var(--acc);font-size:26px;font-weight:500;line-height:1;padding:0;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.markBtn:active{transform:scale(.92)}
+.markBtn.flash{background:var(--acc);color:#04201c}
+.markBtn b{position:absolute;top:-8px;right:-8px;min-width:19px;height:19px;padding:0 4px;border-radius:10px;background:var(--acc);color:#04201c;font-size:11px;font-weight:700;line-height:19px;text-align:center}
+.markBtn b:empty{display:none}
 #askHandle{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 18px 8px;border-radius:14px;background:#14181dcc;border:1px solid #2c343e;color:var(--acc);font-size:12px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
 #askHandle i{display:block;width:38px;height:4px;border-radius:2px;background:var(--acc);opacity:.8}
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d232b;border:1px solid var(--line);padding:8px 14px;border-radius:8px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -109,6 +115,7 @@ button:disabled{opacity:.35;cursor:default}
       <select id="selSeries" title="Pilih seri"></select></div>
     <div class="grp" id="gMode">
       <button id="bMpr" title="MPR 3 bidang dari satu seri [M]">MPR</button>
+      <button id="b3d" title="MPR 3D: putar garis silang untuk meluruskan gambar miring [D]">MPR 3D</button>
       <button id="bCmp" title="Bandingkan beberapa seri/sequence [B]">Banding</button>
       <select id="selGrid" title="Jumlah panel banding"><option value="1x2">2 panel</option><option value="1x3">3 panel</option><option value="2x2">4 panel</option><option value="2x3">6 panel</option></select>
       <button id="bSync" title="Sinkronkan posisi slice antar seri (berdasarkan posisi pasien)">Sinkron</button>
@@ -131,7 +138,7 @@ button:disabled{opacity:.35;cursor:default}
       <button id="bCross" title="Tampilkan garis silang (C)">Garis</button>
       <button id="bId" title="Tampilkan/sembunyikan identitas (I)">ID</button>
       <button id="bClear" title="Hapus semua ukuran">Hapus ukur</button>
-      <button id="bReset" title="Reset zoom/geser (R)">Reset</button>
+      <button id="bReset" title="Reset zoom/geser/putaran MPR (R)">Reset</button>
       <button id="bSave" title="Simpan/bagikan gambar tampilan aktif tanpa identitas [Shift+S]">Simpan</button>
       <button id="bNote" title="Catatan pasien [N]">Catatan</button>
       <button id="bAsk" class="hide" title="Kirim slice yang ditandai ke Claude untuk usulan temuan & draf bacaan">Tanya Claude</button>
@@ -164,7 +171,7 @@ button:disabled{opacity:.35;cursor:default}
     <tr><td>↑ ↓ / PgUp PgDn</td><td>Ganti slice (Shift = 10 slice)</td></tr>
     <tr><td>L · O · H</td><td>Ukur panjang · ROI bulat · densitas HU</td></tr><tr><td>S · W · G · Z · X</td><td>Scroll · W/L · Geser · Zoom · Silang</td></tr><tr><td>1 – 0</td><td>Preset window CT (1 soft tissue, 2 paru, 3 tulang, 4 mediastinum, 5 otak, 6 subdural, 7 stroke, 8 hepar, 9 CTA, 0 HRCT). MRI: 1 default, 2 auto</td></tr><tr><td>Delete</td><td>Hapus ukuran terakhir di slice aktif</td></tr><tr><td>M · B</td><td>MPR · Banding (ON/OFF)</td></tr>
     <tr><td>N · Catatan</td><td>Catatan per pasien: sisipkan template bacaan, tulis, salin. Di HP: geser pegangan bawah ke atas (versi tanpa Tanya Claude)</td></tr><tr><td>F</td><td>Layar penuh (masuk/keluar)</td></tr><tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
-    <tr><td>Edit ukuran</td><td>Seret ujung garis ukur untuk mengubahnya. ROI: seret titik tengah untuk memindah, titik tepi untuk mengubah ukuran</td></tr><tr><td>Garis silang</td><td>Seret garis hijau (MPR) untuk memindah bidang lain; seret titik potongnya untuk memindah keduanya</td></tr><tr><td>HU · ROI</td><td>HU = densitas satu titik (plus rerata 3×3). ROI = lingkaran: rerata ± SD, min/maks, luas</td></tr><tr><td>Tanya Claude · K</td><td>Tandai slice aktif (K), isi pemeriksaan & klinis, lalu kirim. Claude memberi usulan temuan + draf bacaan; tombol Salin menyalin drafnya</td></tr><tr><td>Slab</td><td>MIP untuk nodul/pembuluh, MinIP untuk saluran napas</td></tr>
+    <tr><td>Edit ukuran</td><td>Seret ujung garis ukur untuk mengubahnya. ROI: seret titik tengah untuk memindah, titik tepi untuk mengubah ukuran</td></tr><tr><td>Garis silang</td><td>Seret garis hijau (MPR) untuk memindah bidang lain; seret titik potongnya untuk memindah keduanya; seret titik bulat di garis untuk MEMUTAR (meluruskan gambar miring / MPR oblik). Reset (R) mengembalikan putaran</td></tr><tr><td>HU · ROI</td><td>HU = densitas satu titik (plus rerata 3×3). ROI = lingkaran: rerata ± SD, min/maks, luas</td></tr><tr><td>Tanya Claude · K</td><td>Tandai slice aktif (K), isi pemeriksaan & klinis, lalu kirim. Claude memberi usulan temuan + draf bacaan; tombol Salin menyalin drafnya</td></tr><tr><td>Slab</td><td>MIP untuk nodul/pembuluh, MinIP untuk saluran napas</td></tr>
     <tr><td>Simpan</td><td>Menyimpan tampilan aktif sebagai PNG tanpa nama pasien; di ponsel bisa langsung dibagikan</td></tr>
   </table>
   <p class="note">Hanya untuk melihat/konsultasi, bukan pengganti workstation diagnostik.</p>
@@ -683,7 +690,7 @@ const PRESETS=[
   {k:'7',name:'Stroke',wc:40,ww:40},{k:'8',name:'Hepar',wc:60,ww:160},{k:'9',name:'CTA',wc:300,ww:700},{k:'0',name:'HRCT temporal',wc:700,ww:4000}];
 const GREEN='#39d353', REF='#f2c14e', MEAS='#5ff2c8';
 const isTouch = matchMedia('(pointer:coarse)').matches;
-const st={ series:[], vps:[], nv:0, mode:'2d', grid:'1x2', active:0, max:-1,
+const st={ obl:false, series:[], vps:[], nv:0, mode:'2d', grid:'1x2', active:0, max:-1,
   tool:isTouch?'scroll':'wl', cross:true, ref:true, sync:true, showId:true, slab:{mm:0,mode:''}, hover:null };
 const portrait=()=>innerHeight>innerWidth*1.05;
 function toast(t,ms=2200){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>e.classList.remove('show'),ms); }
@@ -718,8 +725,11 @@ function fillSeriesMenu(){
 function makeVp(){
   const el=document.createElement('div'); el.className='view'; const cv=document.createElement('canvas'); el.appendChild(cv);
   $('#views').insertBefore(el,$('#open'));
+  const mb=document.createElement('button'); mb.className='markBtn hide'; mb.title='Tandai slice ini untuk Tanya Claude [K]'; mb.innerHTML='+<b></b>'; el.appendChild(mb);
   const vp={el,cv,ctx:cv.getContext('2d'),off:document.createElement('canvas'),S:null,k:'ax',m:null,zoom:1,px:0,py:0,cache:null,imgKey:'',dirty:true,tmp:null};
-  bindVp(vp); return vp;
+  mb.addEventListener('pointerdown',e=>e.stopPropagation());
+  mb.onclick=async e=>{ e.stopPropagation(); const i=st.vps.indexOf(vp); if(i!==st.active) setActive(i); await markSlice(); mb.classList.add('flash'); setTimeout(()=>mb.classList.remove('flash'),350); };
+  vp.mb=mb; bindVp(vp); if(typeof updMarkBtns==='function') updMarkBtns(); return vp;
 }
 function ensureVps(n){ while(st.vps.length<n) st.vps.push(makeVp()); st.nv=n; }
 function assign(vp,S,k){
@@ -735,12 +745,12 @@ function setMPR(S){
   layout();
 }
 function setSingle(S){
-  st.mode='2d'; st.max=-1; ensureVps(1); const A=AV(); const k=(A&&A.S===S&&viewMap(S,A.k))?A.k:nativeView(S);
+  st.mode='2d'; st.max=-1; if(st.obl){ st.obl=false; clearObl(); } ensureVps(1); const A=AV(); const k=(A&&A.S===S&&viewMap(S,A.k))?A.k:nativeView(S);
   assign(st.vps[0],S,k); st.active=0; layout();
 }
 function candidates(){ return st.series.filter(s=>s.dim[2]>=2&&!s.rgb).concat(st.series.filter(s=>!(s.dim[2]>=2&&!s.rgb))); }
 function setCompare(grid,list){
-  st.mode='cmp'; st.grid=grid; st.max=-1;
+  st.mode='cmp'; st.grid=grid; st.max=-1; if(st.obl){ st.obl=false; clearObl(); }
   const [r,c]=grid.split('x').map(Number), n=r*c, prev=visVps().map(v=>v.S);
   const pool=list||candidates(), used=[];
   ensureVps(n);
@@ -770,14 +780,14 @@ function layout(){
   views.style.gridTemplateColumns=cols; views.style.gridTemplateRows=rows;
   syncUI(); requestAnimationFrame(resize);
 }
-function syncUI(){
+function syncUI(){ if(typeof updMarkBtns==='function') updMarkBtns();
   $$('#gTool button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.tool));
   const A=AV();
   $('#bMpr').classList.toggle('on',st.mode==='mpr'); $('#bCmp').classList.toggle('on',st.mode==='cmp');
-  $('#bMpr').textContent='MPR '+(st.mode==='mpr'?'ON':'OFF'); $('#bCmp').textContent='Banding '+(st.mode==='cmp'?'ON':'OFF');
+  const o3=st.mode==='mpr'&&st.obl; $('#bMpr').classList.toggle('on',st.mode==='mpr'&&!o3); $('#bMpr').textContent='MPR '+(st.mode==='mpr'&&!o3?'ON':'OFF'); $('#b3d').classList.toggle('on',o3); $('#b3d').textContent='MPR 3D '+(o3?'ON':'OFF'); $('#bCmp').textContent='Banding '+(st.mode==='cmp'?'ON':'OFF');
   $('#selGrid').classList.toggle('hide',st.mode!=='cmp'); $('#bSync').classList.toggle('hide',st.mode!=='cmp'); $('#bRef').classList.toggle('hide',st.mode!=='cmp');
   $('#selGrid').value=st.grid; $('#bSync').classList.toggle('on',st.sync); $('#bRef').classList.toggle('on',st.ref); $('#bSync').textContent='Sinkron '+(st.sync?'ON':'OFF'); $('#bRef').textContent='Ref '+(st.ref?'ON':'OFF');
-  $('#bMpr').disabled = !A || !A.S || ['cor','sag','ax'].filter(k=>viewMap(A.S,k)).length<2;
+  $('#b3d').disabled = $('#bMpr').disabled = !A || !A.S || ['cor','sag','ax'].filter(k=>viewMap(A.S,k)).length<2;
   $$('#gView button[data-v]').forEach(b=>{ const k=b.dataset.v;
     if(st.mode==='mpr'){ const i=visVps().findIndex(v=>v.k===k); b.disabled=i<0; b.classList.toggle('on', st.max>=0 ? i===st.max : i===st.active); }
     else { b.disabled=!A||!A.S||!viewMap(A.S,k); b.classList.toggle('on', !!A&&A.k===k); } });
@@ -808,6 +818,8 @@ function planePt(v,u,vv){ const S=v.S,m=v.m,g=[0,0,0]; g[m.aN]=S.cur[m.aN]; cons
 function getPlane(v){
   const S=v.S; if(!S||!v.m||S.rgb) return null;
   const half = st.slab.mm>0 ? Math.round(st.slab.mm/2/S.sp[v.m.aN]) : 0;
+  if(isObl(v)){ const R=vR(v), C=getC(S), key=S.key+'|'+v.k+'|obl|'+C.map(x=>x.toFixed(2))+'|'+R.flat().map(x=>x.toFixed(5))+'|'+half+'|'+st.slab.mode;
+    if(!v.cache||v.cache.key!==key) v.cache={key, half, data:computeOblique(v,half,st.slab.mode||'max')}; return v.cache; }
   const key=S.key+'|'+v.k+'|'+slicePos(v)+'|'+half+'|'+st.slab.mode;
   if(!v.cache||v.cache.key!==key) v.cache={key, half, data:computePlane(S,v.m,slicePos(v),half,st.slab.mode||'max')};
   return v.cache;
@@ -836,13 +848,13 @@ function drawVp(v, exp=false){
   const g=geom(v), cw=g.cw, ch=g.ch;
   ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
   ctx.drawImage(v.off, g.x0, g.y0, g.W*g.sc, g.H*g.sc);
-  // garis silang MPR (gaya Horos: hijau, celah di titik potong)
-  if(st.mode==='mpr' && st.cross && !exp && S.geom){
-    const [cx,cy]=toScreen(g,planeU(v,v.m.aU),planeU(v,v.m.aV)), gap=22;
-    ctx.strokeStyle=GREEN; ctx.lineWidth=1;
-    for(const w of visVps()){ if(w===v||w.S!==S) continue; const a=w.m.aN;
-      if(a===v.m.aU){ line(ctx,cx,0,cx,cy-gap); line(ctx,cx,cy+gap,cx,ch); }
-      else if(a===v.m.aV){ line(ctx,0,cy,cx-gap,cy); line(ctx,cx+gap,cy,cw,cy); } }
+  // garis silang MPR (gaya Horos: hijau, celah di titik potong) + titik putar
+  if(st.mode==='mpr' && st.cross && !exp && S.geom && st.max<0){
+    const {c,lines,Rh}=crossLines(v), gap=22, far=Math.hypot(cw,ch);
+    ctx.strokeStyle=GREEN; ctx.fillStyle=GREEN; ctx.lineWidth=1;
+    for(const L of lines){ const [dx,dy]=L.dir;
+      line(ctx,c[0]+dx*gap,c[1]+dy*gap,c[0]+dx*far,c[1]+dy*far); line(ctx,c[0]-dx*gap,c[1]-dy*gap,c[0]-dx*far,c[1]-dy*far);
+      for(const s of [1,-1]){ if(st.obl){ ctx.beginPath(); ctx.arc(c[0]+s*dx*Rh,c[1]+s*dy*Rh,isTouch?6:4.5,0,7); ctx.stroke(); } } }
   }
   // garis referensi (mode banding)
   const A=AV();
@@ -869,7 +881,7 @@ function drawVp(v, exp=false){
   const T=(s,x,y,al='left',c='#e6e6e6',bl='top')=>{ ctx.textAlign=al; ctx.textBaseline=bl; ctx.lineWidth=3; ctx.strokeStyle='#000'; ctx.strokeText(s,x,y); ctx.fillStyle=c; ctx.fillText(s,x,y); };
   const fit=(s,w)=>{ if(ctx.measureText(s).width<=w) return s; while(s.length>1&&ctx.measureText(s+'…').width>w) s=s.slice(0,-1); return s+'…'; };
   const lh=small?14:17; let y=5;
-  const N=S.dim[v.m.aN], idx=viewIndex(v), vname=S.geom?VIEWDEF[v.k].name:'Gambar';
+  const N=S.dim[v.m.aN], idx=viewIndex(v), vname=(S.geom?VIEWDEF[v.k].name:'Gambar')+(isObl(v)?' (oblik)':'');
   const sl = st.slab.mm>0 ? ({max:'MIP',min:'MinIP',avg:'Rata²'}[st.slab.mode]+' '+st.slab.mm+' mm') : (v.m.aN===2&&S.thick? 'Tebal '+S.thick+' mm' : 'Jarak '+S.sp[v.m.aN].toFixed(2)+' mm');
   if(small){
     if(!S.rgb) T('W '+Math.round(S.wl.ww)+' L '+Math.round(S.wl.wc),5,y), y+=lh;
@@ -956,30 +968,91 @@ function syncFrom(A){
     const o=B.S.origin, i=Math.round(((PA[0]-o[0])*w[0]+(PA[1]-o[1])*w[1]+(PA[2]-o[2])*w[2])/B.S.sp[a]);
     B._out = i<-1||i>B.S.dim[a]; B.S.cur[a]=Math.max(0,Math.min(B.S.dim[a]-1,i)); }
 }
-function scrollVp(v,d){ if(!v.m) return; v._out=false; const a=v.m.aN, N=v.S.dim[a], dir=v.m.fN?-1:1;
+function scrollVp(v,d){ if(!v.m) return; v._out=false;
+  if(isObl(v)){ const S=v.S, C=getC(S), dn=vAxes(v).dn, st_=S.sp[v.m.aN]; setC(S,[0,1,2].map(i=>C[i]+d*dn[i]*st_)); syncFrom(v); redraw(); return; } const a=v.m.aN, N=v.S.dim[a], dir=v.m.fN?-1:1;
   const n=Math.max(0,Math.min(N-1,v.S.cur[a]+d*dir)); if(n!==v.S.cur[a]){ v.S.cur[a]=n; syncFrom(v); redraw(); } }
 function zoomAt(v,f,x,y){ const g=geom(v), cx=g.cw/2, cy=g.ch/2, z=Math.max(.2,Math.min(30,v.zoom*f)), r=z/v.zoom;
   v.px=x-cx-(x-cx-v.px)*r; v.py=y-cy-(y-cy-v.py)*r; v.zoom=z; redraw(); }
 function setActive(i){ if(st.active!==i){ st.active=i; syncUI(); redraw(); } }
-function setCross(v,x,y){ const g=geom(v), [u,vv]=toPlane(g,x,y); v.S.cur=planeToVol(v,u,vv); syncFrom(v); redraw(); }
+function setCross(v,x,y){ setC(v.S,Pmm(v,x,y)); syncFrom(v); redraw(); }
 function nearMeas(v,x,y,tol){
   if(!v.S||!v.m) return null; const g=geom(v), pos=slicePos(v); let best=null, bd=tol;
   for(const mm of v.S.meas){ if(mm.vk!==v.k||mm.pos!==pos) continue;
     for(const w of (mm.t==='pt'?['a']:['a','b'])){ const [sx,sy]=toScreen(g,mm[w][0],mm[w][1]), d=Math.hypot(sx-x,sy-y); if(d<bd){ bd=d; best={mm,w}; } } }
   return best;
 }
+/* ---------- MPR oblik (putar garis silang) ---------- */
+const I3=[[1,0,0],[0,1,0],[0,0,1]];
+const mmul=(A,B)=>A.map(r=>[0,1,2].map(j=>r[0]*B[0][j]+r[1]*B[1][j]+r[2]*B[2][j]));
+const mv=(A,x)=>A.map(r=>r[0]*x[0]+r[1]*x[1]+r[2]*x[2]);
+function rotM(ax,t){ const [x,y,z]=ax, c=Math.cos(t), s=Math.sin(t), C=1-c;
+  return [[c+x*x*C, x*y*C-z*s, x*z*C+y*s],[y*x*C+z*s, c+y*y*C, y*z*C-x*s],[z*x*C-y*s, z*y*C+x*s, c+z*z*C]]; }
+function isId(R){ if(!R) return true; let s=0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s+=Math.abs(R[i][j]-(i===j?1:0)); return s<1e-6; }
+const vR=v=>v.S&&v.S.Rv?v.S.Rv[v.k]:null;
+const isObl=v=>!isId(vR(v));
+function vAxes(v){ const m=v.m, R=vR(v)||I3, e=(a,f)=>{ const x=[0,0,0]; x[a]=f?-1:1; return x; };
+  return {du:mv(R,e(m.aU,m.fU)), dv:mv(R,e(m.aV,m.fV)), dn:mv(R,e(m.aN,m.fN))}; }
+function getC(S){ if(S.Cf && S.Cf.every((c,i)=>Math.max(0,Math.min(S.dim[i]-1,Math.round(c/S.sp[i])))===S.cur[i])) return S.Cf;
+  return S.cur.map((c,i)=>c*S.sp[i]); }
+function setC(S,C){ C=C.map((c,i)=>Math.max(0,Math.min((S.dim[i]-1)*S.sp[i],c))); S.Cf=C; S.cur=C.map((c,i)=>Math.max(0,Math.min(S.dim[i]-1,Math.round(c/S.sp[i])))); }
+function cPix(v){ const S=v.S,m=v.m,C=getC(S), nu=S.dim[m.aU], nv=S.dim[m.aV], iu=C[m.aU]/S.sp[m.aU], iv=C[m.aV]/S.sp[m.aV];
+  return [(m.fU? nu-1-iu : iu)+.5, (m.fV? nv-1-iv : iv)+.5]; }
+function Pmm(v,x,y){ const S=v.S,m=v.m,g=geom(v),[u,vv]=toPlane(g,x,y),[cu,cv]=cPix(v),A=vAxes(v),C=getC(S);
+  return [0,1,2].map(i=>C[i]+(u-cu)*g.su*A.du[i]+(vv-cv)*g.sv*A.dv[i]); }
+function computeOblique(v,half,mode){
+  const S=v.S,m=v.m, nu=S.dim[m.aU], nv=S.dim[m.aV], su=S.sp[m.aU], sv=S.sp[m.aV], sp=S.sp;
+  const {du,dv,dn}=vAxes(v), C=getC(S), [cu,cv]=cPix(v), D0=S.dim[0], D1=S.dim[1], D2=S.dim[2], cols=D0, sl=S.slices;
+  const out=new Float32Array(nu*nv), bg=S.mod==='CT'?-2048:0, step=sp[m.aN];
+  const iu=[0,1,2].map(i=>du[i]*su/sp[i]), iv=[0,1,2].map(i=>dv[i]*sv/sp[i]), inn=[0,1,2].map(i=>dn[i]*step/sp[i]);
+  const b=[0,1,2].map(i=>C[i]/sp[i]-cu*iu[i]-cv*iv[i]);
+  const N=2*half+1;
+  for(let t=-half;t<=half;t++){ const first=t===-half;
+    const ox=b[0]+t*inn[0], oy=b[1]+t*inn[1], oz=b[2]+t*inn[2];
+    for(let y=0;y<nv;y++){ const yy=y+.5, rx=ox+yy*iv[0], ry=oy+yy*iv[1], rz=oz+yy*iv[2], row=y*nu;
+      for(let x=0;x<nu;x++){ const xx=x+.5, X=rx+xx*iu[0], Y=ry+xx*iu[1], Z=rz+xx*iu[2];
+        let val;
+        const x0=Math.floor(X), y0=Math.floor(Y), z0=Math.floor(Z);
+        if(x0<0||y0<0||z0<0||x0>=D0-1||y0>=D1-1||z0>=D2-1){
+          const xi=Math.round(X), yi=Math.round(Y), zi=Math.round(Z);
+          val = (xi>=0&&yi>=0&&zi>=0&&xi<D0&&yi<D1&&zi<D2) ? sl[zi][yi*cols+xi] : bg;
+        } else {
+          const fx=X-x0, fy=Y-y0, fz=Z-z0, A0=sl[z0], A1=sl[z0+1], p=y0*cols+x0, gx=1-fx;
+          const c00=A0[p]*gx+A0[p+1]*fx, c10=A0[p+cols]*gx+A0[p+cols+1]*fx, c01=A1[p]*gx+A1[p+1]*fx, c11=A1[p+cols]*gx+A1[p+cols+1]*fx;
+          val=(c00*(1-fy)+c10*fy)*(1-fz)+(c01*(1-fy)+c11*fy)*fz;
+        }
+        const o=row+x;
+        if(first) out[o]=val; else if(mode==='max'){ if(val>out[o]) out[o]=val; } else if(mode==='min'){ if(val<out[o]) out[o]=val; } else out[o]+=val;
+      } } }
+  if(mode==='avg'&&N>1) for(let i=0;i<out.length;i++) out[i]/=N;
+  return out;
+}
+function crossLines(v){
+  const S=v.S, g=geom(v), [cu,cv]=cPix(v), c=toScreen(g,cu,cv), A=vAxes(v), lines=[];
+  for(const w of visVps()){ if(w===v||w.S!==S||!w.m) continue; const nW=vAxes(w).dn, d3=cross(A.dn,nW);
+    let dx=dot(d3,A.du), dy=dot(d3,A.dv); const L=Math.hypot(dx,dy); if(L<1e-6) continue; lines.push({w,dir:[dx/L,dy/L],n:nW}); }
+  return {c,lines,g,A, Rh:Math.min(g.cw,g.ch)*0.32};
+}
 function nearCross(v,x,y,tol){
   if(st.mode!=='mpr'||!st.cross||!v.S||!v.S.geom||st.nv<2||st.max>=0) return null;
-  const g=geom(v), [cx,cy]=toScreen(g,planeU(v,v.m.aU),planeU(v,v.m.aV));
-  const hasU=visVps().some(w=>w!==v&&w.S===v.S&&w.m.aN===v.m.aU), hasV=visVps().some(w=>w!==v&&w.S===v.S&&w.m.aN===v.m.aV);
-  const dx=Math.abs(x-cx), dy=Math.abs(y-cy);
-  if(dx<tol*1.6&&dy<tol*1.6&&hasU&&hasV) return 'xh';
-  if(dx<tol&&hasU) return 'xhU'; if(dy<tol&&hasV) return 'xhV'; return null;
+  const {c,lines,Rh}=crossLines(v);
+  if(st.obl) for(const L of lines) for(const s of [1,-1]){ const hx=c[0]+s*L.dir[0]*Rh, hy=c[1]+s*L.dir[1]*Rh; if(Math.hypot(x-hx,y-hy)<tol*1.5) return {t:'rot'}; }
+  if(Math.hypot(x-c[0],y-c[1])<tol*1.6 && lines.length>=2) return {t:'xh'};
+  let best=null, bd=tol;
+  for(const L of lines){ const d=Math.abs((x-c[0])*L.dir[1]-(y-c[1])*L.dir[0]); if(d<bd){ bd=d; best={t:'xl',n:L.n,dir:L.dir}; } }
+  return best;
 }
-function dragCross(v,mode,x,y){ const g=geom(v), [u,vv]=toPlane(g,x,y), c=planeToVol(v,u,vv), S=v.S;
-  if(mode!=='xhV') S.cur[v.m.aU]=c[v.m.aU]; if(mode!=='xhU') S.cur[v.m.aV]=c[v.m.aV]; redraw(); }
+function dragCross(v,op,x,y){
+  const S=v.S;
+  if(op.xh.t==='rot'){ const {c,A}=crossLines(v); const a=Math.atan2(y-c[1],x-c[0]); if(op.a==null){ op.a=a; return; }
+    let da=a-op.a; op.a=a; if(da>Math.PI) da-=2*Math.PI; if(da<-Math.PI) da+=2*Math.PI;
+    const ax=cross(A.du,A.dv), L=Math.hypot(...ax); const Rm=rotM(ax.map(q=>q/L),da);
+    S.Rv=S.Rv||{}; for(const k of ['ax','cor','sag']) if(k!==v.k) S.Rv[k]=mmul(Rm,S.Rv[k]||I3);
+  } else if(op.xh.t==='xh'){ setC(S,Pmm(v,x,y)); }
+  else { const P=Pmm(v,x,y), C=getC(S), n=op.xh.n, d=(P[0]-C[0])*n[0]+(P[1]-C[1])*n[1]+(P[2]-C[2])*n[2]; setC(S,[0,1,2].map(i=>C[i]+d*n[i])); }
+  redraw();
+}
 function hover(v,x,y){ const S=v.S; if(!S||!v.m) return;
-  const xh=nearMeas(v,x,y,9)?'meas':nearCross(v,x,y,8); v.cv.style.cursor = xh==='meas'?'grab':xh==='xh'?'move':xh==='xhU'?'ew-resize':xh==='xhV'?'ns-resize':'crosshair'; const g=geom(v), [u,vv]=toPlane(g,x,y);
+  const nc=nearMeas(v,x,y,9)?{t:'meas'}:nearCross(v,x,y,8), xh=nc&&nc.t; v.cv.style.cursor = xh==='meas'?'grab':xh==='rot'?'alias':xh==='xh'?'move':xh==='xl'?(Math.abs(nc.dir[0])>Math.abs(nc.dir[1])?'ns-resize':'ew-resize'):'crosshair'; const g=geom(v), [u,vv]=toPlane(g,x,y);
   if(u<0||vv<0||u>=g.nu||vv>=g.nv){ if(st.hover){ st.hover=null; redraw(); } return; }
   const iu=Math.floor(u), iv=Math.floor(vv); let t1='X: '+iu+' px Y: '+iv+' px';
   if(!S.rgb){ const val=getPlane(v).data[iv*g.nu+iu]; t1+=' Value: '+(Number.isInteger(val)?val:val.toFixed(1)); }
@@ -1000,8 +1073,8 @@ function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap
     const ed=(e.pointerType!=='mouse'||e.button===0) ? nearMeas(v,p[0],p[1],e.pointerType==='mouse'?9:22) : null;
     if(ed){ const pl0=toPlane(geom(v),p[0],p[1]); op={t:'edit', ed, x:p[0], y:p[1], lx:p[0], ly:p[1], acc:0, last:pl0}; ed.mm.sel=true; redraw(); return; }
     const xh=(e.pointerType!=='mouse'||e.button===0)&&!e.shiftKey ? nearCross(v,p[0],p[1],e.pointerType==='mouse'?8:20) : null;
-    if(xh&&t!=='len'&&t!=='roi'&&t!=='hu') t=xh;
-    op={t, x:p[0], y:p[1], lx:p[0], ly:p[1], acc:0};
+    if(xh&&t!=='len'&&t!=='roi'&&t!=='hu') t='xhd';
+    op={t, x:p[0], y:p[1], lx:p[0], ly:p[1], acc:0, xh};
     const pl=toPlane(geom(v),p[0],p[1]);
     if(t==='len'||t==='roi') v.tmp={t, vk:v.k, pos:slicePos(v), a:pl, b:pl.slice()};
     if(t==='hu') v.tmp={t:'pt', vk:v.k, pos:slicePos(v), a:pl, b:pl};
@@ -1022,7 +1095,7 @@ function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap
     else if(op.t==='len'||op.t==='roi'){ v.tmp.b=toPlane(geom(v),p[0],p[1]); redraw(); }
     else if(op.t==='cross') setCross(v,p[0],p[1]);
     else if(op.t==='hu'){ v.tmp.a=v.tmp.b=toPlane(geom(v),p[0],p[1]); redraw(); }
-    else if(op.t.startsWith('xh')) dragCross(v,op.t,p[0],p[1]);
+    else if(op.t==='xhd') dragCross(v,op,p[0],p[1]);
     else if(op.t==='edit'){ const pl=toPlane(geom(v),p[0],p[1]), {mm,w}=op.ed;
       if(mm.t==='roi'&&w==='a'){ const du=pl[0]-op.last[0], dv=pl[1]-op.last[1]; mm.a=[mm.a[0]+du,mm.a[1]+dv]; mm.b=[mm.b[0]+du,mm.b[1]+dv]; }
       else if(mm.t==='pt'){ mm.a=mm.b=pl; } else mm[w]=pl;
@@ -1050,7 +1123,9 @@ $$('#gTool button').forEach(b=>b.onclick=()=>{ st.tool=b.dataset.t; syncUI(); })
 $$('#gView button[data-v]').forEach(b=>b.onclick=()=>{ const k=b.dataset.v, A=AV(); if(!A) return;
   if(st.mode==='mpr'){ const i=visVps().findIndex(v=>v.k===k); if(i>=0) toggleMax(i); }
   else if(viewMap(A.S,k)){ assign(A,A.S,k); syncFrom(AV()); syncUI(); redraw(); } });
-$('#bMpr').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr') setSingle(A.S); else setMPR(A.S); };
+function clearObl(){ for(const S of st.series) S.Rv=null; }
+$('#bMpr').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr'&&!st.obl) setSingle(A.S); else if(st.mode==='mpr'){ st.obl=false; clearObl(); syncUI(); redraw(); } else { st.obl=false; setMPR(A.S); } };
+$('#b3d').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr'&&st.obl){ st.obl=false; clearObl(); setSingle(A.S); } else if(st.mode==='mpr'){ st.obl=true; syncUI(); redraw(); toast('MPR 3D: seret titik bulat di garis hijau untuk memutar',2200); } else { st.obl=true; setMPR(A.S); toast('MPR 3D: seret titik bulat di garis hijau untuk memutar',2200); } };
 $('#bCmp').onclick=()=>{ if(st.mode==='cmp'){ setSingle(AV().S); return; } const A=AV(); const pool=candidates(); const first=A&&A.S; setCompare(st.grid, first?[first,...pool.filter(s=>s!==first)]:null); };
 $('#selGrid').onchange=e=>setCompare(e.target.value);
 $('#bSync').onclick=()=>{ st.sync=!st.sync; if(st.sync) syncFrom(AV()); syncUI(); redraw(); };
@@ -1062,7 +1137,7 @@ $('#selSeries').onchange=e=>{ const S=st.series[+e.target.value];
 $('#bCross').onclick=()=>{ st.cross=!st.cross; syncUI(); redraw(); };
 $('#bId').onclick=()=>{ st.showId=!st.showId; syncUI(); redraw(); };
 $('#bClear').onclick=()=>{ for(const s of st.series) s.meas=[]; redraw(); };
-$('#bReset').onclick=()=>{ for(const v of st.vps){ v.zoom=1; v.px=v.py=0; } redraw(); };
+$('#bReset').onclick=()=>{ const had=st.series.some(S=>S.Rv&&Object.values(S.Rv).some(R=>!isId(R))); for(const v of st.vps){ v.zoom=1; v.px=v.py=0; } for(const S of st.series){ S.Rv=null; } redraw(); if(had) toast('Zoom, geser, dan putaran MPR direset',1500); };
 $('#bHelp').onclick=()=>$('#modal').classList.remove('hide');
 $('#bCloseHelp').onclick=()=>$('#modal').classList.add('hide');
 $('#modal').onclick=e=>{ if(e.target.id==='modal') $('#modal').classList.add('hide'); };
@@ -1087,6 +1162,7 @@ addEventListener('keydown',e=>{
   else if(k==='c') $('#bCross').click();
   else if(k==='i') $('#bId').click();
   else if(k==='m') $('#bMpr').click();
+  else if(k==='d') $('#b3d').click();
   else if(k==='b') $('#bCmp').click();
   else if(k==='Delete'||k==='Backspace'){ const S=v.S, pos=slicePos(v), i=S.meas.map((m,j)=>m.vk===v.k&&m.pos===pos?j:-1).filter(j=>j>=0).pop(); if(i!=null&&i>=0){ S.meas.splice(i,1); redraw(); toast('Ukuran terakhir di slice ini dihapus',900); } e.preventDefault(); }
   else if(k==='Escape') $('#modal').classList.add('hide');
@@ -1224,7 +1300,8 @@ Baris temuan abnormal ditaruh di atas baris organ normal, atau ditulis di dalam 
 Kesan: judul "Kesan" (CT kepala memakai "Kesimpulan :"), satu poin per baris tanpa nomor; organ normal tidak disebut di kesan; massa ditulis "... dengan detail tersebut diatas".
 Pneumonia ditulis "Pneumonia" saja. Staging malignansi memakai "(AJCC Staging 9th edition T.. N.. M..)" di baris paling akhir kesan.
 Nilai HU ditulis "(138 HU)". Hepar > 15 cm = "ukuran membesar N cm" → kesan "Hepatomegaly". Ektasis PCS ringan/sedang/berat → "Hidronefrosis ringan/sedang/berat", dilatasi ureter → "hidroureter".
-Bila KGB tidak disebut = tidak ada pembesaran KGB (pakai baris KGB negatif template).`;
+Bila KGB tidak disebut = tidak ada pembesaran KGB (pakai baris KGB negatif template).
+Baris temuan hanya deskripsi, tanpa "sesuai ...", "mengarah ...", "dd ...", atau nama diagnosis; diagnosis hanya di Kesan/Kesimpulan.`;
 const TPL={
  ct_abd:{name:'MSCT Abdomen', re:/abd|abdomen|pelvis|hepar|whole/i, txt:`TS Yth, Pemeriksaan MSCT Abdomen Irisan axial reformatted coronal dan sagital {KONTRAS} :
 
@@ -1299,7 +1376,8 @@ Kesimpulan :
 
 Tak tampak infark perdarahan maupun proses desak massa pada parenkim otak
 (dengan kontras: Tak tampak infark, perdarahan, massa maupun proses infeksi pada parenkim otak)
-Aturan: lesi hipodense batas tegas = Chronic cerebral infarction; batas sebagian tidak tegas = Subacute; batas tidak tegas = Acute.`},
+Aturan: lesi hipodense batas tegas = Chronic cerebral infarction; batas sebagian tidak tegas = Subacute; batas tidak tegas = Acute.
+Aturan: "Sulci dan gyri menyempit" → kesimpulan "Brain edema". Hematosinus: temuan "Tampak lesi hiperdense mengisi sinus <...>" (ditaruh setelah "Tak tampak deviasi midline", lalu baris orbita/mastoid tanpa kata sinus), kesimpulan "Hematosinus di sinus <...>". Fracture: "Tampak fracture <...>" dan "Calvaria normal" dihapus.`},
  mri_ls:{name:'MRI Lumbosacral', re:/lumb|l-?spine|ls\b/i, txt:`TS, Yth. Hasil pemeriksaan MRI Lumbosacral tanpa kontras, MR myelografi :
 
 Alignment baik, curve normal
@@ -1410,7 +1488,7 @@ $('#askFmt').oninput=e=>LS('dv_fmt',e.target.value);
 $('#askFmtReset').onclick=()=>{ $('#askFmt').value=DEF_FMT; LS('dv_fmt',DEF_FMT); };
 (async()=>{ try{ if(!window.claude||!claude.use) return; const s=await claude.use('sample'); if(!s) return; AK.sample=s;
   let lim=null; try{ lim=await s.limits(); }catch(e){} AK.maxImg = lim&&lim.images ? lim.images.maxCount : 0;
-  $('#bAsk').classList.remove('hide'); updAskHandle(); }catch(e){} })();
+  $('#bAsk').classList.remove('hide'); updAskHandle(); updMarkBtns(); }catch(e){} })();
 
 function exportVp(v,maxSide=1100){
   let cw=v.cv.clientWidth||512, ch=v.cv.clientHeight||512;
@@ -1430,7 +1508,8 @@ function measText(v){
     else if(mm.t==='pt'){ const P=getPlane(v), iu=Math.floor(mm.a[0]), iv=Math.floor(mm.a[1]); if(P&&iu>=0&&iv>=0&&iu<g.nu&&iv<g.nv) out.push('titik '+P.data[iv*g.nu+iu]+(S.mod==='CT'?' HU':' SI')); } }
   return out.join('; ');
 }
-function renderThumbs(){
+function updMarkBtns(){ const on=!!(AK&&AK.sample); for(const v of st.vps){ if(!v.mb) continue; v.mb.classList.toggle('hide',!on||!v.S); v.mb.querySelector('b').textContent=AK.imgs&&AK.imgs.length?AK.imgs.length:''; } }
+function renderThumbs(){ setTimeout(updMarkBtns,0);
   const t=$('#thumbs'); t.innerHTML='';
   AK.imgs.forEach((im,i)=>{ const d=document.createElement('div'); d.className='th';
     d.innerHTML=`<img src="${im.url}"><span>${i+1}. ${im.short}</span><button title="Hapus">×</button>`;
@@ -1442,12 +1521,14 @@ function renderThumbs(){
 async function markSlice(){
   const v=AV(); if(!v||!v.S||!v.m) return;
   if(AK.maxImg && AK.imgs.length>=AK.maxImg){ toast(`Maksimal ${AK.maxImg} slice per kiriman`); return; }
+  const mk=[v.S.key,v.k,slicePos(v),Math.round(v.S.wl.wc),Math.round(v.S.wl.ww),st.slab.mm,st.slab.mode].join('|');
+  if(AK.imgs.some(x=>x.mk===mk)){ toast('Slice ini sudah ditandai'); return; }
   const S=v.S, blob=await exportVp(v), N=S.dim[v.m.aN], idx=viewIndex(v)+1;
   const vname=S.geom?VIEWDEF[v.k].name:'Gambar';
   const sl = st.slab.mm>0 ? ({max:'MIP',min:'MinIP',avg:'rata-rata'}[st.slab.mode]+' '+st.slab.mm+' mm') : '';
   const desc=`${vname} slice ${idx}/${N}, seri "${S.desc}"${S.mod?' ('+S.mod+')':''}, window W${Math.round(S.wl.ww)}/L${Math.round(S.wl.wc)}${sl?', '+sl:''}`;
   const m=measText(v);
-  AK.imgs.push({blob, url:URL.createObjectURL(blob), short:`${vname.slice(0,3)} ${idx}`, desc: desc+(m?'; pengukuran: '+m:'')});
+  AK.imgs.push({mk, blob, url:URL.createObjectURL(blob), short:`${vname.slice(0,3)} ${idx}`, desc: desc+(m?'; pengukuran: '+m:'')});
   if(!$('#askExam').value){ const P=S.pat; $('#askExam').value=(P.desc||'')||(S.mod==='CT'?'MSCT':S.mod==='MR'?'MRI':S.mod); }
   autoTpl();
   renderThumbs(); toast('Slice ditandai ('+AK.imgs.length+')');
@@ -1489,6 +1570,7 @@ Aturan pengisian:
 2. Temuan dokter menggantikan/mengubah baris normal yang bersangkutan (atau ditulis sebagai baris temuan di atas baris organ), dengan gaya kalimat ekspertise yang rapi. Bila temuan dokter berbeda dengan kesanmu dari gambar, ikuti dokter.
 3. Slice yang ditandai: deskripsikan kelainan yang terlihat bila belum disebut dokter, hanya bila yakin. Bila ragu, jangan masukkan ke draf; sebut di bagian "Catatan" di luar blok kode. Pakai hasil ukur (jarak, ROI/HU, titik HU) bila relevan.
 4. Jangan mengarang ukuran/angka; bila temuan butuh ukuran yang tidak tersedia tulis "[ukur]".
+4b. Baris TEMUAN hanya deskripsi (lokasi, densitas/intensitas, ukuran, perluasan). DILARANG menulis interpretasi di baris temuan: tanpa "sesuai ...", "sesuai gambaran ...", "mengarah ...", "dd ...", "curiga ...", atau nama diagnosis (mis. tulis "Sulci dan gyri menyempit", bukan "Sulci dan gyri menyempit, sesuai gambaran brain edema"; tulis "Tampak lesi hiperdense mengisi sinus ...", bukan "..., sesuai hematosinus"). Diagnosis/interpretasi HANYA ditulis di Kesan/Kesimpulan.
 5. Kesan hanya berisi temuan abnormal (organ normal tidak disebut); bila tidak ada kelainan pakai kesan normal template. Baris petunjuk dalam kurung di template (mis. "(bila ...)", "Aturan: ...") jangan disalin ke draf.
 
 Keluaran:
