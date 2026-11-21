@@ -67,6 +67,8 @@ button:disabled{opacity:.35;cursor:default}
 #note header b{flex:1;font-size:15px}
 #ask .body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
 #note .body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+#ask .body>*,#note .body>*{flex-shrink:0} /* isi panjang tidak terjepit; panel bisa digulir sampai bawah */
+#ask .body{padding-bottom:40px}
 #ask label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
 #note label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
 #ask input,#ask textarea,#ask select{width:100%;font:inherit;color:var(--tx);background:#0f1317;border:1px solid #2c343e;border-radius:6px;padding:6px 8px}
@@ -101,6 +103,12 @@ button:disabled{opacity:.35;cursor:default}
 .markBtn b{position:absolute;top:-8px;right:-8px;min-width:19px;height:19px;padding:0 4px;border-radius:10px;background:var(--acc);color:#04201c;font-size:11px;font-weight:700;line-height:19px;text-align:center}
 .markBtn b:empty{display:none}
 #askHandle{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 18px 8px;border-radius:14px;background:#14181dcc;border:1px solid #2c343e;color:var(--acc);font-size:12px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+#edgeTabs{position:fixed;right:0;top:24%;z-index:7;display:flex;flex-direction:column;gap:22px}
+#edgeTabs button{display:flex;flex-direction:column;align-items:center;gap:6px;width:24px;height:auto;padding:10px 0;border-radius:8px 0 0 8px;border:1px solid #2c343e;border-right:0;background:#14181dd9;color:var(--acc);cursor:pointer;opacity:.75;transition:opacity .15s,width .15s}
+#edgeTabs button:hover{opacity:1;width:30px}
+#edgeTabs b{font-size:16px;line-height:1}
+#edgeTabs span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:600;letter-spacing:.5px}
+#edgeTabs .hide{display:none}
 #askHandle i{display:block;width:38px;height:4px;border-radius:2px;background:var(--acc);opacity:.8}
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d232b;border:1px solid var(--line);padding:8px 14px;border-radius:8px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -141,7 +149,7 @@ button:disabled{opacity:.35;cursor:default}
       <button id="bReset" title="Reset zoom/geser/putaran MPR (R)">Reset</button>
       <button id="bSave" title="Simpan/bagikan gambar tampilan aktif tanpa identitas [Shift+S]">Simpan</button>
       <button id="bNote" title="Catatan pasien [N]">Catatan</button>
-      <button id="bAsk" class="hide" title="Kirim slice yang ditandai ke Claude untuk usulan temuan & draf bacaan">Tanya Claude</button>
+      <button id="bAsk" class="hide" title="Kirim slice yang ditandai ke Claude untuk usulan temuan & draf bacaan [Spasi]">Tanya Claude</button>
       <button id="bFull" title="Layar penuh [F]">⛶</button>
       <button id="bHelp">?</button></div></div>
   </div>
@@ -170,7 +178,7 @@ button:disabled{opacity:.35;cursor:default}
     <tr><td>Klik kanan seret</td><td>Zoom &nbsp;·&nbsp; klik tengah seret = geser</td></tr>
     <tr><td>↑ ↓ / PgUp PgDn</td><td>Ganti slice (Shift = 10 slice)</td></tr>
     <tr><td>L · O · H</td><td>Ukur panjang · ROI bulat · densitas HU</td></tr><tr><td>S · W · G · Z · X</td><td>Scroll · W/L · Geser · Zoom · Silang</td></tr><tr><td>1 – 0</td><td>Preset window CT (1 soft tissue, 2 paru, 3 tulang, 4 mediastinum, 5 otak, 6 subdural, 7 stroke, 8 hepar, 9 CTA, 0 HRCT). MRI: 1 default, 2 auto</td></tr><tr><td>Delete</td><td>Hapus ukuran terakhir di slice aktif</td></tr><tr><td>M · B</td><td>MPR · Banding (ON/OFF)</td></tr>
-    <tr><td>N · Catatan</td><td>Catatan per pasien: sisipkan template bacaan, tulis, salin. Di HP: geser pegangan bawah ke atas (versi tanpa Tanya Claude)</td></tr><tr><td>F</td><td>Layar penuh (masuk/keluar)</td></tr><tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
+    <tr><td>Spasi · Tanya Claude</td><td>Buka/tutup panel Tanya Claude</td></tr><tr><td>N · Catatan</td><td>Catatan per pasien: sisipkan template bacaan, tulis, salin. Di HP: geser pegangan bawah ke atas (versi tanpa Tanya Claude)</td></tr><tr><td>F</td><td>Layar penuh (masuk/keluar)</td></tr><tr><td>R · C · I · Shift+S</td><td>Reset · garis silang · identitas · simpan gambar</td></tr>
     <tr><td>Edit ukuran</td><td>Seret ujung garis ukur untuk mengubahnya. ROI: seret titik tengah untuk memindah, titik tepi untuk mengubah ukuran</td></tr><tr><td>Garis silang</td><td>Seret garis hijau (MPR) untuk memindah bidang lain; seret titik potongnya untuk memindah keduanya; seret titik bulat di garis untuk MEMUTAR (meluruskan gambar miring / MPR oblik). Reset (R) mengembalikan putaran</td></tr><tr><td>HU · ROI</td><td>HU = densitas satu titik (plus rerata 3×3). ROI = lingkaran: rerata ± SD, min/maks, luas</td></tr><tr><td>Tanya Claude · K</td><td>Tandai slice aktif (K), isi pemeriksaan & klinis, lalu kirim. Claude memberi usulan temuan + draf bacaan; tombol Salin menyalin drafnya</td></tr><tr><td>Slab</td><td>MIP untuk nodul/pembuluh, MinIP untuk saluran napas</td></tr>
     <tr><td>Simpan</td><td>Menyimpan tampilan aktif sebagai PNG tanpa nama pasien; di ponsel bisa langsung dibagikan</td></tr>
   </table>
@@ -209,7 +217,7 @@ button:disabled{opacity:.35;cursor:default}
   <div style="padding:6px 10px"><label class="note" style="margin:0">Resolusi: </label><select class="selRes" style="max-width:200px"><option value="full">Penuh (paling tajam)</option><option value="auto">Hemat RAM</option></select></div>
   <div id="plProg"></div>
   <div id="plItems"></div>
-  <div class="note" style="padding:8px 10px">Pasien yang terbuka disimpan sementara di browser HP ini (maks. 24 jam) agar tidak hilang saat layar dilipat/dibuka. Hapus (×) pasien yang sudah selesai agar memori dan penyimpanan tetap lega. Geser panel ke kiri untuk menutup.</div>
+  <div class="note" style="padding:8px 10px">Pasien yang terbuka disimpan sementara di browser HP ini (maks. 24 jam) agar tidak hilang saat layar dilipat/dibuka. Hapus (×) pasien yang sudah selesai agar memori dan penyimpanan tetap lega. Geser panel ke kiri untuk menutup. Di komputer: klik-tahan lalu seret panel ke kiri untuk menutup.</div>
 </div>
 <div id="note" class="hide">
   <header><b id="noteTitle">Catatan</b><button id="noteClose">Tutup</button></header>
@@ -221,6 +229,7 @@ button:disabled{opacity:.35;cursor:default}
     <div class="warn">Catatan tersimpan otomatis per pasien di perangkat ini saja, dan ikut terhapus saat pasien dihapus (×) atau setelah 24 jam.</div>
   </div>
 </div>
+<div id="edgeTabs" class="hide"><button id="edgeAsk" title="Buka Tanya Claude [Spasi]"><b>‹</b><span>Claude</span></button><button id="edgeNote" title="Buka Catatan [N]"><b>‹</b><span>Catatan</span></button></div>
 <div id="askHandle" class="hide"><i></i><span>Claude ▲</span></div>
 <div id="toast"></div>
 
@@ -834,9 +843,10 @@ function updateImage(v){
     oc.putImageData(id,0,0); return; }
   const P=getPlane(v), key=P.key+'|'+S.wl.wc+'|'+S.wl.ww;
   if(v.imgKey===key) return; v.imgKey=key;
-  const id=oc.createImageData(nu,nv), d32=new Uint32Array(id.data.buffer), src=P.data;
+  if(!v._id||v._id.width!==nu||v._id.height!==nv){ v._id=oc.createImageData(nu,nv); v._d32=new Uint32Array(v._id.data.buffer); }
+  const id=v._id, d32=v._d32, src=P.data;
   const lo=S.wl.wc-S.wl.ww/2, k=255/S.wl.ww, inv=S.invert;
-  for(let i=0;i<src.length;i++){ let g=(src[i]-lo)*k; g=g<0?0:g>255?255:g|0; if(inv) g=255-g; d32[i]=0xFF000000|(g<<16)|(g<<8)|g; }
+  for(let i=0,n=src.length;i<n;i++){ let g=(src[i]-lo)*k; g=g<0?0:g>255?255:g|0; if(inv) g=255-g; d32[i]=0xFF000000|g*0x10101; }
   oc.putImageData(id,0,0);
 }
 function line(ctx,x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
@@ -846,7 +856,7 @@ function drawVp(v, exp=false){
   if(!S||!v.m) return;
   updateImage(v);
   const g=geom(v), cw=g.cw, ch=g.ch;
-  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality=(performance.now()-_scrT<180)?'medium':'high';
   ctx.drawImage(v.off, g.x0, g.y0, g.W*g.sc, g.H*g.sc);
   // garis silang MPR (gaya Horos: hijau, celah di titik potong) + titik putar
   if(st.mode==='mpr' && st.cross && !exp && S.geom && st.max<0){
@@ -968,7 +978,8 @@ function syncFrom(A){
     const o=B.S.origin, i=Math.round(((PA[0]-o[0])*w[0]+(PA[1]-o[1])*w[1]+(PA[2]-o[2])*w[2])/B.S.sp[a]);
     B._out = i<-1||i>B.S.dim[a]; B.S.cur[a]=Math.max(0,Math.min(B.S.dim[a]-1,i)); }
 }
-function scrollVp(v,d){ if(!v.m) return; v._out=false;
+let _scrT=0, _scrIdle=0;
+function scrollVp(v,d){ if(!v.m) return; v._out=false; _scrT=performance.now(); clearTimeout(_scrIdle); _scrIdle=setTimeout(redraw,200);
   if(isObl(v)){ const S=v.S, C=getC(S), dn=vAxes(v).dn, st_=S.sp[v.m.aN]; setC(S,[0,1,2].map(i=>C[i]+d*dn[i]*st_)); syncFrom(v); redraw(); return; } const a=v.m.aN, N=v.S.dim[a], dir=v.m.fN?-1:1;
   const n=Math.max(0,Math.min(N-1,v.S.cur[a]+d*dir)); if(n!==v.S.cur[a]){ v.S.cur[a]=n; syncFrom(v); redraw(); } }
 function zoomAt(v,f,x,y){ const g=geom(v), cx=g.cw/2, cy=g.ch/2, z=Math.max(.2,Math.min(30,v.zoom*f)), r=z/v.zoom;
@@ -1115,7 +1126,10 @@ function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap
   cv.addEventListener('pointerleave',()=>{ if(st.hover&&st.hover.v===v){ st.hover=null; redraw(); } });
   cv.addEventListener('wheel',e=>{ if(!v.S||!v.m) return; e.preventDefault(); setActive(idx());
     if(e.ctrlKey){ const p=xy(e); zoomAt(v,Math.exp(-e.deltaY*.002),p[0],p[1]); return; }
-    const d=Math.abs(e.deltaY)<40?Math.sign(e.deltaY):Math.round(e.deltaY/50)||Math.sign(e.deltaY); scrollVp(v,d); },{passive:false});
+    const px=e.deltaMode===1?e.deltaY*40:e.deltaMode===2?e.deltaY*400:e.deltaY;
+    if(Math.abs(px)>=50 && e.deltaMode===0 && Number.isInteger(e.deltaY)) v._wacc=(v._wacc||0)+Math.sign(px)*Math.max(1,Math.round(Math.abs(px)/100))*30; // roda mouse: 1 slice per klik
+    else v._wacc=(v._wacc||0)+px; // trackpad: tiap ~30 px = 1 slice
+    if(!v._wraf) v._wraf=requestAnimationFrame(()=>{ v._wraf=0; const n=Math.trunc(v._wacc/30); if(n){ v._wacc-=n*30; scrollVp(v,n); } }); },{passive:false});
 }
 
 /* ---------- toolbar ---------- */
@@ -1146,6 +1160,9 @@ $('#bOpen').onclick=()=>$('#inFiles').click();
 
 const TOOLKEY={l:'len',o:'roi',h:'hu',s:'scroll',w:'wl',g:'pan',z:'zoom',x:'cross'};
 function setTool(t){ st.tool=t; syncUI(); const n={len:'Ukur panjang',roi:'ROI bulat',hu:'Densitas HU',scroll:'Scroll',wl:'W/L',pan:'Geser',zoom:'Zoom',cross:'Silang'}[t]; toast('Alat: '+n,900); }
+// fokus kembali ke gambar: setelah memilih dropdown atau menyentuh gambar, panah atas/bawah langsung pindah slice
+document.addEventListener('change',e=>{ if(e.target.tagName==='SELECT' && !e.target.closest('#ask,#note')) setTimeout(()=>e.target.blur(),0); },true);
+document.addEventListener('pointerdown',e=>{ const a=document.activeElement; if(e.target.tagName==='CANVAS' && a && /SELECT|INPUT|TEXTAREA/.test(a.tagName)) a.blur(); },true);
 addEventListener('keydown',e=>{
   const v=AV(); if(!v||!v.S||/SELECT|INPUT|TEXTAREA/.test(e.target.tagName)) return;
   if(e.metaKey||e.ctrlKey||e.altKey) return;
@@ -1405,20 +1422,19 @@ MR Myelografi : tak tampak hambatan aliran liquor cerebrospinalis
 
 Kesan
 (curve melurus → "Paracervical muscle spasm")`},
- mri_head:{name:'MRI Kepala', re:/head|brain|kepala|otak|flair|dwi/i, txt:`TS, Yth Hasil MRI kepala sqeuence [sekuens yang dilakukan] {KONTRAS}:
+ mri_head:{name:'MRI Kepala', re:/head|brain|kepala|otak|flair|dwi/i, txt:`TS, Yth Hasil MRI kepala sqeuence {SEQ_HEAD} {KONTRAS}:
 
-Tak tampak lesi hipointense / hiperintense di brain parenchyme yang ditandai dengan perubahan intensitas pada sekuens T1WI/T2WI/T2 FLAIR/ SWI maupun restricted diffusion area pada DWI
+Tak tampak lesi hipointense / hiperintense di brain parenchyme yang ditandai dengan perubahan intensitas pada sekuens {SEQ_LINE}
 Sulci dan gyri tampak normal
 Sistem ventrikel dan cysterna tampak baik
 Tak tampak deviasi midline struktur
 Pons dan cerebellum tampak baik
 Mastoid, orbita dan sinus paranasal kanan kiri tampak baik
-(bila MRA: MR Angiography : Circullus willisi tampak patent, tak tampak aneurysma maupun vascular malformation)
-
+{MRA_LINE}
 Kesan
 Tak tampak infark, perdarahan, maupun massa pada parenkim otak
 (dengan kontras: Tak tampak infark, perdarahan, massa maupun proses infeksi pada parenkim otak)`},
- mri_genu:{name:'MRI Genu', re:/knee|genu|lutut/i, txt:`TS, Yth. Hasil pemeriksaan MRI Genu [kanan/kiri] irisan axial T1FSE, T2FrFSE, PDFatSat FSE, Sagittal T2FrFSE, PD Fatsat FSI, Coronal T2FrFSE, PD FatSat FSE :
+ mri_genu:{name:'MRI Genu', re:/knee|genu|lutut/i, txt:`TS, Yth. Hasil pemeriksaan MRI Genu {SIDE} irisan axial T1FSE, T2FrFSE, PDFatSat FSE, Sagittal T2FrFSE, PD Fatsat FSI, Coronal T2FrFSE, PD FatSat FSE :
 
 Tak tampak tear ACL dan PCL
 Tak tampak anterior/posterior drawer sign
@@ -1430,7 +1446,7 @@ Tak tampak kelainan pada medial dan lateral collateral ligament
 Tendon quadriceps femoris dan tendon patellar normal
 
 Kesan`},
- mri_pelvis:{name:'MRI Pelvis', re:/pelvis|pelvic|uterus|prostat|rectum|perianal/i, txt:`TS, Yth. Hasil pemeriksaan MRI Pelvis irisan axial T1, T2, Coronal T1, T2Fatsat, Sagittal T2 {KONTRAS} :
+ mri_pelvis:{name:'MRI Pelvis', re:/pelvis|pelvic|uterus|prostat|rectum|perianal/i, txt:`TS, Yth. Hasil pemeriksaan MRI Pelvis irisan axial T1, T2, FIESTA, Coronal T1, T2Fatsat, Sagittal T2 {KONTRAS} :
 
 Pelvic inlet tampak normal
 Bowel structure tampak baik, tak tampak penebalan dinding, tak tampak massa
@@ -1441,7 +1457,7 @@ Tulang - tulang tampak baik, celah dan permukaan sendi tampak baik
 Tak tampak perubahan intensitas bone marrow
 
 Kesan`},
- mri_abd:{name:'MRI Abdomen + MRCP', re:/abd|mrcp|liver|hepar|haste|trufi|dixon|opp|vibe/i, txt:`TS, Yth, Hasil pemeriksaan MRI abdomen irisan axial, coronal, [sekuens], MRCP {KONTRAS} :
+ mri_abd:{name:'MRI Abdomen + MRCP', re:/abd|mrcp|liver|hepar|haste|trufi|dixon|opp|vibe/i, txt:`TS, Yth, Hasil pemeriksaan MRI abdomen irisan axial, FIESTA/DualEcho, coronal T1FatSat/FIESTA, MRCP {KONTRAS} :
 
 Hepar : ukuran normal, intensitas normal, tepi rata sudut tajam, sistem billier tampak normal, vena porta/vena hepatica normal, tak tampak nodul yang hipointense/hiperintense
 GB : ukuran normal, intensitas normal, tak tampak massa/batu
@@ -1452,11 +1468,71 @@ Ginjal kiri : ukuran normal, tak tampak ectasis pelviocalyceal sistem, tak tampa
 MRCP : CBD, CHD dan ductus pancreaticus tampak normal, tak tampak filling defect
 
 Kesan`},
+ mri_thor:{name:'MRI Thoracal', re:/thoracal|thoracic|th-?spine|t-?spine|dorsal/i, txt:`TS, Yth. Hasil pemeriksaan MRI Thoracal Sequence T1FSE, T2FSE, T2FS FSE {KONTRAS}, MR myelografi :
+
+Alignment baik, curve normal
+Tak tampak listhesis maupun kompresi
+Tak tampak perubahan intensitas bone marrow
+Tak tampak loss of intense pada discus intervertebralis
+Level VTh 1-2 sampai VTh 12 - VL 1 : tampak baik
+Tak tampak lesi hipo/hiperintense abnormal intramedula, dan extramedula
+Tak tampak gambaran abses soft tissue
+MR Myelografi : tak tampak hambatan aliran liquor cerebrospinalis
+
+Kesan`},
+ mri_shoulder:{name:'MRI Shoulder', re:/shoulder|bahu/i, txt:`TS, Yth. Hasil pemeriksaan MRI Shoulder {SIDE} irisan axial T1FSE, T2FrFSE, PDFatSat FSE, Sagittal T2FrFSE, PD Fatsat FSI, Coronal T2FrFSE, PD FatSat FSE :
+
+Rotator cuff : m.supraspinatus, infraspinatus, subcapsularis, teres minor tak tampak kelainan/tear
+Glenoid labrum tak tampak kelainan
+Tak tampak gambaran soft tissue mass
+Celah dan permukaan sendi tampak baik
+
+Kesan`},
+ mri_ankle:{name:'MRI Ankle', re:/ankle|talus|pedis|foot/i, txt:`TS, Yth. Hasil pemeriksaan MRI Ankle {SIDE} irisan axial T1FSE, T2FrFSE, PDFatSat FSE, Sagittal T2FrFSE, PD Fatsat FSI, Coronal T2FrFSE, PD FatSat FSE :
+
+Alignment baik
+Tak tampak gambaran bone bruise
+Ligamen Lateral: Anterior Talofibular Ligament (ATFL), Calcaneofibular Ligament (CFL), dan Posterior Talofibular Ligament (PTFL) tak tampak kelainan/tear.
+Ligamen Medial: Kompleks Deltoid Ligament (superficial dan deep component) tak tampak kelainan/penebalan/tear.
+Syndesmosis: Anterior dan Posterior Inferior Tibiofibular Ligament tampak baik.
+Tendon: Tendon Achiles, Tibialis Posterior, Flexor Digitorum Longus, Flexor Hallucis Longus, serta grup Peroneal tak tampak kelainan/tenosynovitis/tear.
+Plantar Fascia: Tak tampak penebalan atau edema.
+Sinus Tarsi: Tampak baik, obliterasi lemak tak tampak.
+Celah dan permukaan sendi tibiotalar, subtalar, dan midtarsal tampak baik.
+Tak tampak gambaran soft tissue mass maupun efusi sendi yang prominen.
+
+Kesan`},
+ mri_wrist:{name:'MRI Wrist / Manus', re:/wrist|manus|hand|carp/i, txt:`TS, Yth. Hasil pemeriksaan MRI Wrist {SIDE} irisan axial T2 FS, Coronal PD, T2 FS, T1, Sagittal PD, T2 FS, T1 {KONTRAS} :
+
+Tak tampak tear pada triangular fibrocartilage complex (TFCC)
+Tak tampak tear pada ligamentum scapholunate dan lunotriquetral
+Tak tampak kompresi nervus medianus pada carpal tunnel
+Tak tampak joint effusion
+Tak tampak fraktur maupun dislokasi pada distal radius, ulna, maupun tulang-tulang carpal
+Tak tampak bone bruise maupun bone marrow edema
+Tak tampak kelainan pada radiocarpal dan distal radioulnar joint
+
+Kesan`},
  umum:{name:'Lainnya (tanpa template baku)', re:/$^/, txt:`(Tidak ada template baku: susun header "TS Yth, Pemeriksaan <jenis> ... :", baris temuan normal yang lazim untuk pemeriksaan ini, lalu Kesan.)`}
 };
+// sekuens MRI kepala mengikuti template; DWI/SWI/MRA/MRV ditambahkan hanya bila serinya ada
+function mrSeq(){
+  const d=st.series.filter(x=>x.mod==='MR').map(x=>x.desc||'').join(' | ');
+  const has=re=>re.test(d), any=d.length>0;
+  const dwi=!any||has(/dwi|diff|adc|trace|ep2d_?d|\bb ?1000/i), swi=has(/swi|swan|\bsw[_ ]|t2\*|hemo/i),
+        mra=has(/tof|mra|angio|\bcow\b|circle/i), mrv=has(/mrv|veno|pc[_ ]?v|tof.*vein/i);
+  let head='T1FSE, T2RFSE, FLAIR'+(dwi?', DWI':'')+(swi?', SWI':'')+(mra?(mrv?', MRA MRV':', MRA'):mrv?', MRV':'');
+  let line='T1WI/T2WI/T2 FLAIR'+(swi?'/ SWI':'')+(dwi?' maupun restricted diffusion area pada DWI':'');
+  const mra_l=mra?'MR Angiography : Circullus willisi tampak patent, tak tampak aneurysma maupun vascular malformation\n':'';
+  return {head, line, mra:mra_l};
+}
+function sideOf(){ const S=AV()&&AV().S; const t=[$('#askExam').value,S&&S.pat.desc,S&&S.desc].join(' ');
+  return /kanan|right|dext|\brt\b/i.test(t)?'kanan':/kiri|left|sinis|\blt\b/i.test(t)?'kiri':'[kanan/kiri]'; }
 function fillTpl(key){
   const S=AV()&&AV().S, sex=(S&&S.pat.sex)||'', kon=$('#askKontras').value, enh=/dengan/.test(kon);
   let t=(LS('dv_tpl_'+key)||TPL[key].txt);
+  const sq=mrSeq(), sd=sideOf();
+  t=t.replace(/\{SEQ_HEAD\}/g,sq.head).replace(/\{SEQ_LINE\}/g,sq.line).replace(/\{MRA_LINE\}/g,sq.mra).replace(/\{SIDE\}/g,sd);
   t=t.replace(/\{KONTRAS\}/g,kon).replace(/\{KONTRAS_ENH\}/g, enh?' yang pada pemberian kontras tak tampak abnormal contrast enhancement':'')
    .replace(/\{PELVIS\}/g, sex==='M'?'Prostat : ukuran normal, densitas parenkim normal, tak tampak massa/kalsifikasi': sex==='F'?'Uterus : ukuran normal, densitas normal, tak tampak massa\nAdnexa : tak tampak massa solid/kistik':'(Prostat bila laki-laki / Uterus dan Adnexa bila perempuan)')
    .replace(/\{PELVIS_MRI\}/g, sex==='M'?'Prostat : ukuran normal, tak tampak massa':'Uterus : ukuran normal, posisi anteflexy, tak tampak massa/kista/kalsifikasi\nCervix uteri tampak baik\nVagina tampak baik\nOvarium kanan kiri tak tampak massa/kista');
@@ -1465,7 +1541,7 @@ function fillTpl(key){
 function guessTpl(){
   const S=AV()&&AV().S; if(!S) return 'umum';
   const txt=[$('#askExam').value,S.pat.desc,S.desc].join(' '), mr=S.mod==='MR';
-  const order = mr ? ['mri_ls','mri_cerv','mri_genu','mri_head','mri_pelvis','mri_abd'] : ['stono','ct_thxabd','ct_head','ct_thx','ct_abd'];
+  const order = mr ? ['mri_ls','mri_cerv','mri_thor','mri_genu','mri_shoulder','mri_ankle','mri_wrist','mri_head','mri_pelvis','mri_abd'] : ['stono','ct_thxabd','ct_head','ct_thx','ct_abd'];
   for(const k of order) if(TPL[k].re.test(txt)) return k;
   return mr?'umum':(S.mod==='CT'?'ct_abd':'umum');
 }
@@ -1571,6 +1647,7 @@ Aturan pengisian:
 3. Slice yang ditandai: deskripsikan kelainan yang terlihat bila belum disebut dokter, hanya bila yakin. Bila ragu, jangan masukkan ke draf; sebut di bagian "Catatan" di luar blok kode. Pakai hasil ukur (jarak, ROI/HU, titik HU) bila relevan.
 4. Jangan mengarang ukuran/angka; bila temuan butuh ukuran yang tidak tersedia tulis "[ukur]".
 4b. Baris TEMUAN hanya deskripsi (lokasi, densitas/intensitas, ukuran, perluasan). DILARANG menulis interpretasi di baris temuan: tanpa "sesuai ...", "sesuai gambaran ...", "mengarah ...", "dd ...", "curiga ...", atau nama diagnosis (mis. tulis "Sulci dan gyri menyempit", bukan "Sulci dan gyri menyempit, sesuai gambaran brain edema"; tulis "Tampak lesi hiperdense mengisi sinus ...", bukan "..., sesuai hematosinus"). Diagnosis/interpretasi HANYA ditulis di Kesan/Kesimpulan.
+4c. Header (jenis pemeriksaan, irisan/sekuens, kontras) disalin PERSIS dari template. Jangan mengganti sekuens dengan nama seri DICOM (mis. t2_tse_sag, ep2d_diff) dan jangan menambah/mengurangi sekuens.
 5. Kesan hanya berisi temuan abnormal (organ normal tidak disebut); bila tidak ada kelainan pakai kesan normal template. Baris petunjuk dalam kurung di template (mis. "(bila ...)", "Aturan: ...") jangan disalin ke draf.
 
 Keluaran:
@@ -1606,10 +1683,20 @@ async function ask(input, images){
   }finally{ $('#askSend').disabled=false; $('#askFSend').disabled=false; $('#askStop').classList.add('hide'); AK.ctl=null; }
 }
 function handleTarget(){ return $('#bAsk').classList.contains('hide') ? 'note' : 'ask'; }
-function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok); }
+function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok);
+  const closed=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide');
+  const okE=closed && st.studies&&st.studies.length>0 && !isTouch;
+  $('#edgeTabs').classList.toggle('hide',!okE); $('#edgeAsk').classList.toggle('hide',$('#bAsk').classList.contains('hide')); }
 function showAsk(on){ if(on){ autoTpl(); if(typeof showNote==='function'&&!$('#note').classList.contains('hide')) showNote(false); } setTimeout(updAskHandle,0); $('#ask').classList.toggle('hide',!on); document.body.classList.toggle('asking',on); $('#bAsk').classList.toggle('on',on); requestAnimationFrame(resize); }
 $('#bAsk').onclick=()=>showAsk($('#ask').classList.contains('hide'));
 $('#askClose').onclick=()=>showAsk(false);
+$('#edgeAsk').onclick=()=>showAsk(true);
+// Spasi = buka/tutup Tanya Claude (N = Catatan)
+addEventListener('keydown',e=>{ if(e.code!=='Space'&&e.key!==' ') return; if(e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
+  const t=e.target; if(/INPUT|TEXTAREA|SELECT/.test(t.tagName)||t.isContentEditable) return;
+  if($('#bAsk').classList.contains('hide')||!st.studies.length) return;
+  e.preventDefault(); if(t.blur) t.blur(); showAsk($('#ask').classList.contains('hide')); },true);
+$('#edgeNote').onclick=()=>showNote(true);
 $('#askMark').onclick=markSlice;
 $('#askClearImgs').onclick=()=>{ AK.imgs.forEach(i=>URL.revokeObjectURL(i.url)); AK.imgs=[]; renderThumbs(); };
 $('#askStop').onclick=()=>AK.ctl&&AK.ctl.abort();
@@ -1682,6 +1769,19 @@ function swipeClose(el, dir, onClose, handle, cond){
     const d = dir==='left'?-dx: dir==='right'?dx: dy;
     el.style.transition='transform .18s ease-out';
     if(decided && d>70){ el.style.transform = horiz?`translateX(${dir==='left'?'-':''}110%)`:'translateY(110%)'; setTimeout(()=>{ onClose(); el.style.transition='none'; el.style.transform=''; },180); }
+    else el.style.transform=''; });
+  // mouse (komputer): klik-tahan di bagian kosong panel lalu seret, seperti swipe di HP
+  let m=null;
+  area.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0||(cond&&!cond())) return;
+    if(e.target.closest('input,textarea,select,button,a,label,summary,pre,code,#ansBox,#thumbs img,.note,[contenteditable]')) return;
+    m={sx:e.clientX,sy:e.clientY,dec:false,id:e.pointerId}; });
+  addEventListener('pointermove',e=>{ if(!m||e.pointerId!==m.id) return; const dx=e.clientX-m.sx, dy=e.clientY-m.sy;
+    if(!m.dec){ if(Math.abs(dx)<8&&Math.abs(dy)<8) return; if(horiz? Math.abs(dx)<Math.abs(dy) : Math.abs(dy)<Math.abs(dx)){ m=null; return; } m.dec=true; el.style.transition='none'; document.body.style.userSelect='none'; try{ getSelection().removeAllRanges(); }catch(_){} }
+    const d = dir==='left'?Math.min(0,dx): dir==='right'?Math.max(0,dx): Math.max(0,dy);
+    el.style.transform = horiz?`translateX(${d}px)`:`translateY(${d}px)`; e.preventDefault(); });
+  addEventListener('pointerup',e=>{ if(!m||e.pointerId!==m.id) return; const dec=m.dec, dx=e.clientX-m.sx, dy=e.clientY-m.sy; m=null; document.body.style.userSelect=''; if(!dec) return;
+    const d = dir==='left'?-dx: dir==='right'?dx: dy; el.style.transition='transform .18s ease-out';
+    if(d>70){ el.style.transform = horiz?`translateX(${dir==='left'?'-':''}110%)`:'translateY(110%)'; setTimeout(()=>{ onClose(); el.style.transition='none'; el.style.transform=''; },180); }
     else el.style.transform=''; });
 }
 swipeClose($('#plist'),'left',()=>showPList(false));
@@ -1815,6 +1915,8 @@ async function toggleFS(){ try{
 $('#bFull').onclick=toggleFS;
 document.addEventListener('fullscreenchange',()=>{ $('#bFull').classList.toggle('on',!!document.fullscreenElement); setTimeout(()=>{ if(st.nv) layout(); },150); });
 addEventListener('keydown',e=>{ if((e.key==='f'||e.key==='F')&&!e.metaKey&&!e.ctrlKey&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) toggleFS(); });
+
+try{ for(const id of ['plist','ask','note']) localStorage.removeItem('dv_pos_'+id); }catch(e){}
 </script>
 <script>if('serviceWorker' in navigator && location.protocol==='https:'){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }</script>
 </body>
