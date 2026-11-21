@@ -44,6 +44,8 @@ button:disabled{opacity:.35;cursor:default}
 #modal td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:top}
 #modal td:first-child{color:var(--acc);white-space:nowrap}
 .row{display:contents}
+/* layar lebar (iPad/komputer): toolbar dibungkus ke baris berikut, bukan digulir — mencegah toolbar buram di Safari iPad */
+@media (min-width:761px){#bar{flex-wrap:wrap;overflow:visible;row-gap:5px}}
 @media (max-width:760px){#bar{flex-direction:column;align-items:stretch;gap:4px;padding:4px;overflow:visible}.row{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.row::-webkit-scrollbar{display:none}.grp{padding-right:4px}button,select{height:30px;padding:0 8px;font-size:12px}select{max-width:180px}}
 #plist{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:100%;background:var(--panel);border-right:1px solid var(--line);z-index:9;display:flex;flex-direction:column;box-shadow:8px 0 24px #0008}
 #plist header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
@@ -205,6 +207,8 @@ button:disabled{opacity:.35;cursor:default}
     <details><summary>Aturan umum gaya bacaan</summary><textarea id="askFmt" rows="8"></textarea>
       <button id="askFmtReset" style="margin-top:4px">Kembalikan default</button></details>
     <div class="rowb"><button id="askSend" class="pri">Kirim ke Claude</button><button id="askStop" class="hide">Stop</button><button id="askCopy" class="hide">Salin draf</button></div>
+    <div id="askManual" class="hide"><div class="rowb"><button id="askCopyTxt">Salin teks saja</button><button id="askSaveImgs">Gambar saja</button></div>
+      <div class="warn" style="color:var(--mut)">Mode kirim manual: viewer ini tidak terhubung ke akun Claude. Tombol <b>Bagikan ke Claude</b> menyiapkan gambar + teks permintaan, lalu pilih aplikasi Claude di lembar bagikan. Jika teks tidak ikut terbawa, teksnya sudah otomatis tersalin — tinggal tempel (paste) di Claude.</div></div>
     <div id="ansBox" class="hide"></div>
     <div id="askFollow" class="hide"><label>Tanya lanjutan (teks saja; gambar tidak dikirim ulang)</label>
       <div class="rowb" style="flex-wrap:nowrap"><input id="askF" placeholder="mis. ubah kesan, tambahkan staging"><button id="askFSend">Kirim</button></div></div>
@@ -964,6 +968,7 @@ function roiStats(data,g,c,rmm){
 let raf=0;
 function redraw(){ if(typeof saveState==='function'&&st.studies&&st.studies.length) saveState(); for(const v of st.vps) v.dirty=true; if(!raf) raf=requestAnimationFrame(()=>{ raf=0;
   visVps().forEach((v,i)=>{ if(v.dirty&&!v.el.classList.contains('hide')){ v.dirty=false; drawVp(v); } }); }); }
+try{ let _bh=0; new ResizeObserver(()=>{ const h=$('#bar').offsetHeight; if(h!==_bh){ _bh=h; requestAnimationFrame(()=>{ resize(); }); } }).observe(document.getElementById('bar')); }catch(e){}
 function resize(){ const dpr=devicePixelRatio||1; for(const v of visVps()){ const c=v.cv, w=Math.round(c.clientWidth*dpr), h=Math.round(c.clientHeight*dpr);
   if(c.width!==w||c.height!==h){ c.width=w; c.height=h; } } redraw(); }
 let lastPortrait=null;
@@ -1564,7 +1569,31 @@ $('#askFmt').oninput=e=>LS('dv_fmt',e.target.value);
 $('#askFmtReset').onclick=()=>{ $('#askFmt').value=DEF_FMT; LS('dv_fmt',DEF_FMT); };
 (async()=>{ try{ if(!window.claude||!claude.use) return; const s=await claude.use('sample'); if(!s) return; AK.sample=s;
   let lim=null; try{ lim=await s.limits(); }catch(e){} AK.maxImg = lim&&lim.images ? lim.images.maxCount : 0;
-  $('#bAsk').classList.remove('hide'); updAskHandle(); updMarkBtns(); }catch(e){} })();
+  $('#bAsk').classList.remove('hide'); updAskHandle(); updMarkBtns(); }catch(e){} finally{ if(!AK.sample) enableManual(); } })();
+/* ---------- mode kirim manual (versi GitHub / di luar claude.ai): bagikan gambar + teks ke aplikasi Claude ---------- */
+function enableManual(){
+  AK.manual=true;
+  $('#bAsk').classList.remove('hide'); $('#bAsk').textContent='Kirim Claude';
+  $('#askSend').textContent='Bagikan ke Claude'; $('#askManual').classList.remove('hide');
+  $('#askStop').classList.add('hide'); $('#askFollow').classList.add('hide'); $('#askCopy').classList.add('hide');
+  const ws=document.querySelectorAll('#ask .warn'), w=ws[ws.length-1]; if(w) w.textContent='Nama/ID pasien tidak ikut dikirim, tetapi gambar yang Anda bagikan akan terkirim ke Claude. Hasil adalah draf AI dari slice terpilih saja — wajib diverifikasi dokter.';
+  updAskHandle(); updMarkBtns();
+}
+function manualFiles(){ return AK.imgs.map((im,i)=>new File([im.blob],`slice${i+1}_${im.short.replace(/[^\w]+/g,'')}.jpg`,{type:'image/jpeg'})); }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(e){ try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(_){ return false; } } }
+async function manualShare(withText=true, withImgs=true){
+  if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; }
+  const text=buildPrompt(), files=withImgs?manualFiles():[];
+  let copied=false; if(withText) copied=await copyText(text);
+  const data={}; if(files.length) data.files=files; if(withText) data.text=text; if(!withText) data.title='Slice untuk Claude';
+  try{
+    if(navigator.share&&(!files.length||(navigator.canShare&&navigator.canShare({files})))){
+      await navigator.share(data); if(withText) toast(copied?'Teks juga tersalin — tempel di Claude bila belum ada':'Dibagikan',4000); return; }
+  }catch(e){ if(e&&e.name==='AbortError') return; }
+  // cadangan: unduh gambar + teks sudah tersalin
+  if(files.length){ for(const f of files){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); await new Promise(r=>setTimeout(r,250)); } }
+  toast((withText&&copied?'Teks tersalin. ':'')+(files.length?'Gambar diunduh — lampirkan di Claude.':''),5000);
+}
 
 function exportVp(v,maxSide=1100){
   let cw=v.cv.clientWidth||512, ch=v.cv.clientHeight||512;
@@ -1584,7 +1613,7 @@ function measText(v){
     else if(mm.t==='pt'){ const P=getPlane(v), iu=Math.floor(mm.a[0]), iv=Math.floor(mm.a[1]); if(P&&iu>=0&&iv>=0&&iu<g.nu&&iv<g.nv) out.push('titik '+P.data[iv*g.nu+iu]+(S.mod==='CT'?' HU':' SI')); } }
   return out.join('; ');
 }
-function updMarkBtns(){ const on=!!(AK&&AK.sample); for(const v of st.vps){ if(!v.mb) continue; v.mb.classList.toggle('hide',!on||!v.S); v.mb.querySelector('b').textContent=AK.imgs&&AK.imgs.length?AK.imgs.length:''; } }
+function updMarkBtns(){ const on=!!(AK&&(AK.sample||AK.manual)); for(const v of st.vps){ if(!v.mb) continue; v.mb.classList.toggle('hide',!on||!v.S); v.mb.querySelector('b').textContent=AK.imgs&&AK.imgs.length?AK.imgs.length:''; } }
 function renderThumbs(){ setTimeout(updMarkBtns,0);
   const t=$('#thumbs'); t.innerHTML='';
   AK.imgs.forEach((im,i)=>{ const d=document.createElement('div'); d.className='th';
@@ -1682,7 +1711,7 @@ async function ask(input, images){
     if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code)) $('#bAsk').classList.add('hide');
   }finally{ $('#askSend').disabled=false; $('#askFSend').disabled=false; $('#askStop').classList.add('hide'); AK.ctl=null; }
 }
-function handleTarget(){ return $('#bAsk').classList.contains('hide') ? 'note' : 'ask'; }
+function handleTarget(){ return ($('#bAsk').classList.contains('hide')||AK.manual) ? 'note' : 'ask'; }
 function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok);
   const closed=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide');
   const okE=closed && st.studies&&st.studies.length>0 && !isTouch;
@@ -1698,10 +1727,12 @@ addEventListener('keydown',e=>{ if(e.code!=='Space'&&e.key!==' ') return; if(e.m
   e.preventDefault(); if(t.blur) t.blur(); showAsk($('#ask').classList.contains('hide')); },true);
 $('#edgeNote').onclick=()=>showNote(true);
 $('#askMark').onclick=markSlice;
+$('#askCopyTxt').onclick=async()=>{ if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tulis temuan dulu'); return; } toast(await copyText(buildPrompt())?'Teks tersalin':'Gagal menyalin'); };
+$('#askSaveImgs').onclick=()=>manualShare(false,true);
 $('#askClearImgs').onclick=()=>{ AK.imgs.forEach(i=>URL.revokeObjectURL(i.url)); AK.imgs=[]; renderThumbs(); };
 $('#askStop').onclick=()=>AK.ctl&&AK.ctl.abort();
 $('#askCopy').onclick=e=>copyText(draftOf(AK.last),e.target);
-$('#askSend').onclick=()=>{ if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; } AK.turns=null; $('#askFollow').classList.add('hide'); ask(buildPrompt(), AK.imgs.length?AK.imgs.map(i=>i.blob):null); };
+$('#askSend').onclick=()=>{ if(AK.manual){ manualShare(true,true); return; } if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; } AK.turns=null; $('#askFollow').classList.add('hide'); ask(buildPrompt(), AK.imgs.length?AK.imgs.map(i=>i.blob):null); };
 $('#askFSend').onclick=()=>{ const q=$('#askF').value.trim(); if(!q||!AK.turns) return; $('#askF').value='';
   ask(AK.turns.concat([{role:'user',content:q+'\n\n(Gambar sudah dilihat pada giliran pertama; jawab berdasarkan pengamatanmu sebelumnya. Bila draf berubah, tulis ulang draf lengkap dalam satu blok kode.)'}])); };
 $('#askF').onkeydown=e=>{ if(e.key==='Enter') $('#askFSend').click(); };
@@ -1717,7 +1748,17 @@ const DB={ open(){ if(!this._p) this._p=new Promise((res,rej)=>{ if(!window.inde
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); return this._p; },
   async run(mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('src',mode), s=t.objectStore('src'); let out; const rq=fn(s); if(rq) rq.onsuccess=()=>{ out=rq.result; }; t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
   all(){ return this.run('readonly',s=>s.getAll()); }, put(o){ return this.run('readwrite',s=>s.put(o)); }, del(id){ return this.run('readwrite',s=>s.delete(id)); }, clear(){ return this.run('readwrite',s=>s.clear()); } };
-async function saveSource(files,keys){ try{ const id=Date.now()+'_'+Math.random().toString(36).slice(2,7); await DB.put({id,t:Date.now(),files:[...files],keys:[...keys]}); return id; }catch(e){ console.warn('simpan sesi gagal',e); return null; } }
+async function saveSource(files,keys){
+  const id=Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{}); }catch(e){}
+  try{ await DB.put({id,t:Date.now(),files:[...files],keys:[...keys]}); return id; }
+  catch(e1){
+    // Safari iPad/iPhone kadang menolak menyimpan File dari pemilih file langsung: salin isinya dulu lalu coba lagi
+    try{ const cp=[]; for(const f of files) cp.push(new File([await f.arrayBuffer()], f.name, {type:f.type||'application/octet-stream'}));
+      await DB.put({id,t:Date.now(),files:cp,keys:[...keys]}); return id; }
+    catch(e2){ console.warn('simpan sesi gagal',e1,e2); const why=(e2&&e2.name)||(e1&&e1.name)||'';
+      toast('Sesi tidak bisa disimpan di browser ini'+(/Quota/i.test(why)?' (ruang penyimpanan penuh/dibatasi)':why?' ('+why+')':'')+'. Saat dibuka ulang, file perlu dimuat lagi.',5000);
+      return null; } } }
 async function dropStudyFromSources(key){ try{ for(const s of await DB.all()){ if(!s.keys.includes(key)) continue; s.keys=s.keys.filter(k=>k!==key); if(s.keys.length) await DB.put(s); else await DB.del(s.id); } }catch(e){} }
 let _stT=0, _restoring=false;
 function saveState(){ if(_restoring) return; clearTimeout(_stT); _stT=setTimeout(()=>{ try{
@@ -1734,7 +1775,7 @@ function applyState(o){
   if(o.tool) st.tool=o.tool;
 }
 async function restoreSession(){
-  let srcs=[]; try{ srcs=await DB.all(); }catch(e){ return; }
+  let srcs=[]; try{ srcs=await DB.all(); }catch(e){ if((()=>{ try{ return localStorage.getItem('dv_state'); }catch(_){ return 1; } })()) toast('Penyimpanan sesi tidak tersedia di browser ini'+(e&&e.name?' ('+e.name+')':'')+'.',5000); return; }
   const now=Date.now(); const old=srcs.filter(s=>now-s.t>SESS_TTL); for(const s of old){ try{ await DB.del(s.id); }catch(e){} }
   srcs=srcs.filter(s=>now-s.t<=SESS_TTL&&s.files&&s.files.length).sort((a,b)=>a.t-b.t);
   if(!srcs.length) return;
@@ -1752,7 +1793,7 @@ async function restoreSession(){
     let i=state&&state.active? st.studies.findIndex(s=>s.key===state.active) : 0; if(i<0) i=0;
     st.si=-1; openStudy(i); syncUI();
     toast('Sesi sebelumnya dipulihkan ('+st.studies.length+' pasien)',3000);
-  }catch(e){ console.warn(e); pr.textContent=''; }
+  }catch(e){ console.warn(e); pr.textContent=''; toast('Sesi sebelumnya gagal dipulihkan'+(e&&e.name?' ('+e.name+')':'')+'. Silakan buka file lagi.',5000); }
   finally{ _restoring=false; }
 }
 
