@@ -38,4 +38,69 @@ This software is **NOT a certified medical device** and has not been cleared, ce
 
 ## Lisensi / License
 
+Hak Cipta (c) 2026 narendrajr. Semua hak dilindungi.
+Copyright (c) 2026 narendrajr. All rights reserved.
+
+=== BAHASA INDONESIA ===
+
+Perangkat lunak ini, termasuk kode sumber, tampilan, logo, ikon, dan
+dokumentasinya ("Perangkat Lunak"), adalah milik narendrajr.
+
+1. Yang diizinkan:
+   a. Melihat kode sumber di repository ini.
+   b. Menggunakan Perangkat Lunak melalui alamat resmi yang disediakan
+      pemilik, untuk keperluan pribadi dan non-komersial.
+
+2. Yang TIDAK diizinkan tanpa izin tertulis dari narendrajr:
+   a. Menyalin, memperbanyak, atau mengunggah ulang sebagian maupun
+      seluruh Perangkat Lunak.
+   b. Mengubah, memodifikasi, atau membuat karya turunan.
+   c. Mendistribusikan, menjual, menyewakan, atau menyertakan
+      Perangkat Lunak dalam produk atau layanan lain.
+   d. Menggunakan Perangkat Lunak untuk tujuan komersial.
+   e. Menghapus atau mengubah keterangan hak cipta, lisensi, dan
+      peringatan dalam Perangkat Lunak.
+
+3. Perangkat Lunak ini BUKAN alat kesehatan bersertifikat dan tidak
+   boleh digunakan sebagai satu-satunya dasar diagnosis atau
+   keputusan klinis (lihat README).
+
+4. Perangkat Lunak disediakan "SEBAGAIMANA ADANYA", tanpa jaminan apa
+   pun, baik tersurat maupun tersirat. Pemilik tidak bertanggung jawab
+   atas klaim, kerugian, atau akibat apa pun yang timbul dari
+   penggunaan Perangkat Lunak ini.
+
+Permohonan izin dapat diajukan kepada narendrajr melalui GitHub.
+
+=== ENGLISH ===
+
+This software, including its source code, user interface, logo,
+icons, and documentation (the "Software"), is the property of
+narendrajr.
+
+1. Permitted:
+   a. Viewing the source code in this repository.
+   b. Using the Software through the official address provided by the
+      owner, for personal and non-commercial purposes.
+
+2. NOT permitted without prior written permission from narendrajr:
+   a. Copying, reproducing, or re-uploading the Software, in whole or
+      in part.
+   b. Modifying the Software or creating derivative works.
+   c. Distributing, selling, renting, or including the Software in
+      other products or services.
+   d. Using the Software for commercial purposes.
+   e. Removing or altering copyright, license, or warning notices in
+      the Software.
+
+3. The Software is NOT a certified medical device and must not be used
+   as the sole basis for diagnosis or clinical decisions (see README).
+
+4. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED. IN NO EVENT SHALL THE OWNER BE LIABLE FOR ANY
+   CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THE
+   SOFTWARE.
+
+Permission requests may be submitted to narendrajr via GitHub.
+
 © 2026 narendrajr. Semua hak dilindungi / All rights reserved. Lihat file [LICENSE](LICENSE).
