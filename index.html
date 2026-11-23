@@ -208,7 +208,7 @@ button:disabled{opacity:.35;cursor:default}
       <button id="askFmtReset" style="margin-top:4px">Kembalikan default</button></details>
     <div class="rowb"><button id="askSend" class="pri">Kirim ke Claude</button><button id="askStop" class="hide">Stop</button><button id="askCopy" class="hide">Salin draf</button></div>
     <div id="askManual" class="hide"><div class="rowb"><button id="askCopyTxt">Salin teks saja</button><button id="askSaveImgs">Gambar saja</button></div>
-      <div class="warn" style="color:var(--mut)">Mode kirim manual: viewer ini tidak terhubung ke akun Claude. Tombol <b>Bagikan ke Claude</b> menyiapkan gambar + teks permintaan, lalu pilih aplikasi Claude di lembar bagikan. Jika teks tidak ikut terbawa, teksnya sudah otomatis tersalin — tinggal tempel (paste) di Claude.</div></div>
+      <div class="warn" style="color:var(--mut)">Mode kirim manual: viewer ini tidak terhubung ke akun Claude. Tombol <b>Bagikan ke Claude</b> menyiapkan gambar + teks permintaan, lalu pilih aplikasi Claude di lembar bagikan. Jika teks tidak ikut terbawa, teksnya sudah otomatis tersalin — tinggal tempel (paste) di Claude. Di komputer (Mac/PC), tombol itu menyalin gambar ke clipboard — tempel dengan Cmd+V di Claude, lalu pakai Salin teks saja untuk teksnya.</div></div>
     <div id="ansBox" class="hide"></div>
     <div id="askFollow" class="hide"><label>Tanya lanjutan (teks saja; gambar tidak dikirim ulang)</label>
       <div class="rowb" style="flex-wrap:nowrap"><input id="askF" placeholder="mis. ubah kesan, tambahkan staging"><button id="askFSend">Kirim</button></div></div>
@@ -1598,8 +1598,20 @@ function enableManual(){
 }
 function manualFiles(){ return AK.imgs.map((im,i)=>new File([im.blob],`slice${i+1}_${im.short.replace(/[^\w]+/g,'')}.jpg`,{type:'image/jpeg'})); }
 async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(e){ try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(_){ return false; } } }
+function isDeskMac(){ try{ return matchMedia('(pointer:fine)').matches&&!(navigator.maxTouchPoints>1)&&!/Android|iPhone|iPad/i.test(navigator.userAgent); }catch(e){ return false; } }
+async function copyImgs(){ try{
+  const bms=await Promise.all(AK.imgs.map(im=>createImageBitmap(im.blob))), H=Math.min(1000,Math.max(...bms.map(b=>b.height))), gap=8;
+  const ws=bms.map(b=>Math.round(b.width*H/b.height)), W=ws.reduce((x,y)=>x+y,0)+gap*(bms.length-1);
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,W,H);
+  let x=0; bms.forEach((b,i)=>{ g.drawImage(b,x,0,ws[i],H); x+=ws[i]+gap; });
+  const png=await new Promise(r=>c.toBlob(r,'image/png'));
+  await navigator.clipboard.write([new ClipboardItem({'image/png':png})]); return true; }catch(e){ return false; } }
 async function manualShare(withText=true, withImgs=true){
   if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; }
+  if(isDeskMac()){ // komputer: menu bagikan tidak memuat Claude -> salin ke clipboard lalu tempel (Cmd+V) di Claude
+    if(withImgs&&AK.imgs.length){ const ok=await copyImgs(); if(ok){ toast(withText?'Gambar tersalin — tempel (Cmd+V) di Claude, lalu klik "Salin teks saja" dan tempel lagi':'Gambar tersalin — tempel (Cmd+V) di Claude',6000); return; } }
+    else if(withText){ toast(await copyText(buildPrompt())?'Teks tersalin — tempel di Claude':'Gagal menyalin'); return; }
+  }
   const text=buildPrompt(), files=withImgs?manualFiles():[];
   let copied=false; if(withText) copied=await copyText(text);
   const data={}; if(files.length) data.files=files; if(withText) data.text=text; if(!withText) data.title='Slice untuk Claude';
