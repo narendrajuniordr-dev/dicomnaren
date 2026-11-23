@@ -1759,12 +1759,17 @@ $('#edgeNote').onclick=()=>showNote(true);
 $('#askMark').onclick=markSlice;
 $('#askCopyTxt').onclick=async()=>{ if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tulis temuan dulu'); return; } toast(await copyText(buildPrompt())?'Teks tersalin':'Gagal menyalin'); };
 $('#askSaveImgs').onclick=()=>manualShare(false,true);
+let _caStep=0, _caT=0; const _caReset=()=>{ _caStep=0; $('#askCopyAll').textContent='Salin semua'; };
 $('#askCopyAll').onclick=async()=>{ if(!AK.imgs.length&&!$('#askQ').value.trim()){ toast('Tandai slice atau tulis temuan dulu'); return; }
-  if(!AK.imgs.length){ toast(await copyText(buildPrompt())?'Teks tersalin':'Gagal menyalin'); return; }
-  const r=await copyImgs(true);
-  if(r===2) toast('Gambar + teks tersalin — tempel (Cmd+V) di Claude. Bila teks tidak ikut, klik "Salin teks saja" lalu tempel lagi',6000);
-  else if(r===1){ await copyText(buildPrompt()); toast('Gambar tersalin; teks tidak bisa digabung — tempel gambar, lalu teks lewat "Salin teks saja"',6000); }
-  else toast('Gagal menyalin gambar — pakai "Gambar saja"'); };
+  clearTimeout(_caT);
+  if(_caStep===1){ // langkah 2: teks
+    const ok=await copyText(buildPrompt()); toast(ok?'Teks tersalin — tempel (Cmd+V) di Claude, lalu kirim':'Gagal menyalin teks',5000); _caReset(); return; }
+  if(!AK.imgs.length){ toast(await copyText(buildPrompt())?'Teks tersalin — tempel di Claude':'Gagal menyalin'); return; }
+  // langkah 1: gambar (Claude hanya menerima satu jenis isi per tempel, jadi gambar dan teks bergantian)
+  const r=await copyImgs(false);
+  if(!r){ toast('Gagal menyalin gambar — pakai "Gambar saja"'); return; }
+  _caStep=1; $('#askCopyAll').textContent='Langkah 2: salin teks'; toast('Langkah 1: gambar tersalin — tempel (Cmd+V) di Claude, lalu klik tombol ini lagi untuk teks',7000);
+  _caT=setTimeout(_caReset,120000); };
 $('#askClearImgs').onclick=()=>{ AK.imgs.forEach(i=>URL.revokeObjectURL(i.url)); AK.imgs=[]; renderThumbs(); };
 $('#askStop').onclick=()=>AK.ctl&&AK.ctl.abort();
 $('#askCopy').onclick=e=>copyText(draftOf(AK.last),e.target);
