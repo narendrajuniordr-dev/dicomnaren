@@ -1683,6 +1683,14 @@ function buildPrompt(){
   const S=AV()&&AV().S, sex=S&&S.pat.sex==='M'?'laki-laki':S&&S.pat.sex==='F'?'perempuan':'';
   const list=AK.imgs.length?AK.imgs.map((im,i)=>`Gambar ${i+1}: ${im.desc}`).join('\n'):'(tidak ada gambar terlampir)';
   const tplKey=$('#askTplSel').value, tpl=fillTpl(tplKey);
+  if(AK.manual){ // kirim manual ke chat Claude pribadi: tanpa aturan/template (Claude sudah punya simpanan template & aturan bacaan)
+    const hd=`${AK.imgs.length?`Terlampir ${AK.imgs.length} key image (label R/L/A/P/S/I; sisi kiri layar = kanan pasien pada aksial/koronal; overlay memuat nomor slice dan hasil ukur).`:''}
+Pemeriksaan: ${exam} (${$('#askKontras').value})${sex?'\nPasien: '+sex:''}${clin?'\nInfo klinis: '+clin:''}
+${list}`;
+    if(mode==='q') return `${hd}\n\nPertanyaan: ${q||'(kosong)'}`;
+    if(mode==='find') return `${hd}${q?'\n\nTemuan saya: '+q:''}\n\nUsulkan temuan yang terlihat pada gambar (nomor gambar, lokasi, deskripsi, keyakinan).`;
+    return `${hd}\n\nTemuan saya:\n${q||'(tidak ada; gunakan kelainan yang terlihat pada slice)'}\n\nBuatkan bacaan ${TPL[tplKey].name} sesuai template dan aturan bacaan saya yang tersimpan.`;
+  }
   const head=`Kamu membantu dokter spesialis radiologi menyusun ekspertise. ${AK.imgs.length?`Terlampir ${AK.imgs.length} key image yang ditandai dokter (slice yang dianggap penting). Overlay gambar memuat window, label orientasi (R/L/A/P/S/I; sisi kiri layar = kanan pasien pada aksial/koronal), nomor slice, penggaris, dan hasil ukur.`:''}
 
 Pemeriksaan: ${exam} (${$('#askKontras').value})${sex?'\nPasien: '+sex:''}${clin?'\nInfo klinis: '+clin:''}
