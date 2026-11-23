@@ -1129,13 +1129,12 @@ function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap
   };
   cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
   cv.addEventListener('pointerleave',()=>{ if(st.hover&&st.hover.v===v){ st.hover=null; redraw(); } });
-  const WTHR=3;
   cv.addEventListener('wheel',e=>{ if(!v.S||!v.m) return; e.preventDefault(); setActive(idx());
     if(e.ctrlKey){ const p=xy(e); zoomAt(v,Math.exp(-e.deltaY*.002),p[0],p[1]); return; }
     const px=e.deltaMode===1?e.deltaY*40:e.deltaMode===2?e.deltaY*400:e.deltaY;
-    if(Math.abs(px)>=50 && e.deltaMode===0 && Number.isInteger(e.deltaY)) v._wacc=(v._wacc||0)+Math.sign(px)*Math.max(1,Math.round(Math.abs(px)/100))*WTHR; // roda mouse: 1 slice per klik
-    else v._wacc=(v._wacc||0)+px; // trackpad: tiap ~3 px = 1 slice
-    if(!v._wraf){ const tick=()=>{ v._wraf=0; const a=v._wacc||0; let take=a*0.28; if(Math.abs(a)<2) take=a; v._wacc=a-take; v._fr=(v._fr||0)+take; const n=Math.trunc(v._fr/WTHR); if(n){ v._fr-=n*WTHR; scrollVp(v,n); } if(Math.abs(v._wacc)>=0.5) v._wraf=requestAnimationFrame(tick); }; v._wraf=requestAnimationFrame(tick); } },{passive:false}); // gerak dihaluskan (easing): pelan lalu cepat tanpa patah
+    if(Math.abs(px)>=50 && e.deltaMode===0 && Number.isInteger(e.deltaY)) v._wacc=(v._wacc||0)+Math.sign(px)*Math.max(1,Math.round(Math.abs(px)/100))*30; // roda mouse: 1 slice per klik
+    else v._wacc=(v._wacc||0)+px; // trackpad: tiap ~30 px = 1 slice
+    if(!v._wraf) v._wraf=requestAnimationFrame(()=>{ v._wraf=0; const n=Math.trunc(v._wacc/30); if(n){ v._wacc-=n*30; scrollVp(v,n); } }); },{passive:false});
 }
 
 /* ---------- toolbar ---------- */
@@ -1146,23 +1145,7 @@ $$('#gView button[data-v]').forEach(b=>b.onclick=()=>{ const k=b.dataset.v, A=AV
 function clearObl(){ for(const S of st.series) S.Rv=null; }
 $('#bMpr').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr'&&!st.obl) setSingle(A.S); else if(st.mode==='mpr'){ st.obl=false; clearObl(); syncUI(); redraw(); } else { st.obl=false; setMPR(A.S); } };
 $('#b3d').onclick=()=>{ const A=AV(); if(!A||!A.S) return; if(st.mode==='mpr'&&st.obl){ st.obl=false; clearObl(); setSingle(A.S); } else if(st.mode==='mpr'){ st.obl=true; syncUI(); redraw(); toast('MPR 3D: seret titik bulat di garis hijau untuk memutar',2200); } else { st.obl=true; setMPR(A.S); toast('MPR 3D: seret titik bulat di garis hijau untuk memutar',2200); } };
-// urutan seri awal di mode Banding: seri aktif, lalu seri yang berbeda arah (axial/coronal/sagital) supaya garis referensi muncul, lokalizer paling akhir
-function cmpOrder(first){
-  const ok=s=>s!==first&&s.dim[2]>=2&&!s.rgb&&s.geom;
-  const nrm=S=>nVec(S,viewMap(S,nativeView(S)).aN);
-  const par=(a,b)=>Math.abs(dot(nrm(a),nrm(b)))>0.95;
-  const isLoc=s=>/localiz|locali[sz]er|scout|survey|posdisp/i.test(s.desc||'');
-  const good=st.series.filter(ok).filter(s=>!isLoc(s)), loc=st.series.filter(ok).filter(isLoc), rest=st.series.filter(s=>s!==first&&!ok(s));
-  const out=[], used=[first];
-  // satu seri per arah dulu (yang paling banyak irisan), lalu sisanya
-  const byDir=[]; for(const s of good){ let g=byDir.find(d=>first&&par(d[0],s)); if(!g){ g=byDir.find(d=>par(d[0],s)); } if(g) g.push(s); else byDir.push([s]); }
-  const firstDirParallel=first&&first.geom?good.filter(s=>par(first,s)):[];
-  const others=byDir.filter(d=>!(first&&first.geom&&par(first,d[0]))).map(d=>d.sort((a,b)=>b.dim[2]-a.dim[2])[0]);
-  const tail=good.filter(s=>!others.includes(s));
-  return [first,...others,...tail,...loc,...rest].filter(Boolean);
-}
-$('#bCmp').onclick=()=>{ if(st.mode==='cmp'){ setSingle(AV().S); return; } const A=AV(); const first=A&&A.S; setCompare(st.grid, first?cmpOrder(first):null);
-  setTimeout(()=>{ const vs=visVps().filter(v=>v.S&&v.S.geom); if(st.ref&&vs.length>1&&vs.every(v=>Math.abs(dot(nVec(v.S,v.m.aN),nVec(vs[0].S,vs[0].m.aN)))>0.95)) toast('Garis referensi hanya muncul antar seri beda arah (mis. axial vs koronal). Pilih seri lain di panel.',4500); },400); };
+$('#bCmp').onclick=()=>{ if(st.mode==='cmp'){ setSingle(AV().S); return; } const A=AV(); const pool=candidates(); const first=A&&A.S; setCompare(st.grid, first?[first,...pool.filter(s=>s!==first)]:null); };
 $('#selGrid').onchange=e=>setCompare(e.target.value);
 $('#bSync').onclick=()=>{ st.sync=!st.sync; if(st.sync) syncFrom(AV()); syncUI(); redraw(); };
 $('#bRef').onclick=()=>{ st.ref=!st.ref; syncUI(); redraw(); };
@@ -1975,7 +1958,7 @@ document.addEventListener('fullscreenchange',()=>{ $('#bFull').classList.toggle(
 addEventListener('keydown',e=>{ if((e.key==='f'||e.key==='F')&&!e.metaKey&&!e.ctrlKey&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) toggleFS(); });
 
 try{ for(const id of ['plist','ask','note']) localStorage.removeItem('dv_pos_'+id); }catch(e){}
-<script>if('serviceWorker' in navigator && location.protocol==='https:'){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }</script>
 </script>
+<script>if('serviceWorker' in navigator && location.protocol==='https:'){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }</script>
 </body>
 </html>
