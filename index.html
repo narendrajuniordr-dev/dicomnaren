@@ -1129,13 +1129,13 @@ function bindVp(v){ const cv=v.cv, ptr=new Map(); let op=null, pin=null, lastTap
   };
   cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
   cv.addEventListener('pointerleave',()=>{ if(st.hover&&st.hover.v===v){ st.hover=null; redraw(); } });
-  const WTHR=10;
+  const WTHR=3;
   cv.addEventListener('wheel',e=>{ if(!v.S||!v.m) return; e.preventDefault(); setActive(idx());
     if(e.ctrlKey){ const p=xy(e); zoomAt(v,Math.exp(-e.deltaY*.002),p[0],p[1]); return; }
     const px=e.deltaMode===1?e.deltaY*40:e.deltaMode===2?e.deltaY*400:e.deltaY;
     if(Math.abs(px)>=50 && e.deltaMode===0 && Number.isInteger(e.deltaY)) v._wacc=(v._wacc||0)+Math.sign(px)*Math.max(1,Math.round(Math.abs(px)/100))*WTHR; // roda mouse: 1 slice per klik
-    else v._wacc=(v._wacc||0)+px; // trackpad: tiap ~10 px = 1 slice
-    if(!v._wraf) v._wraf=requestAnimationFrame(()=>{ v._wraf=0; const n=Math.trunc(v._wacc/WTHR); if(n){ v._wacc-=n*WTHR; scrollVp(v,n); } }); },{passive:false});
+    else v._wacc=(v._wacc||0)+px; // trackpad: tiap ~3 px = 1 slice
+    if(!v._wraf){ const tick=()=>{ v._wraf=0; const a=v._wacc||0; let take=a*0.28; if(Math.abs(a)<2) take=a; v._wacc=a-take; v._fr=(v._fr||0)+take; const n=Math.trunc(v._fr/WTHR); if(n){ v._fr-=n*WTHR; scrollVp(v,n); } if(Math.abs(v._wacc)>=0.5) v._wraf=requestAnimationFrame(tick); }; v._wraf=requestAnimationFrame(tick); } },{passive:false}); // gerak dihaluskan (easing): pelan lalu cepat tanpa patah
 }
 
 /* ---------- toolbar ---------- */
