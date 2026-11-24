@@ -221,7 +221,7 @@ button:disabled{opacity:.35;cursor:default}
   <div style="padding:6px 10px"><label class="note" style="margin:0">Resolusi: </label><select class="selRes" style="max-width:200px"><option value="full">Penuh (paling tajam)</option><option value="auto">Hemat RAM</option></select></div>
   <div id="plProg"></div>
   <div id="plItems"></div>
-  <div class="note" style="padding:8px 10px">Pasien yang terbuka disimpan sementara di browser HP ini (maks. 24 jam) agar tidak hilang saat layar dilipat/dibuka. Hapus (×) pasien yang sudah selesai agar memori dan penyimpanan tetap lega. Geser panel ke kiri untuk menutup. Di komputer: klik-tahan lalu seret panel ke kiri untuk menutup.</div>
+  <div class="note" style="padding:8px 10px">Pasien yang terbuka disimpan sementara di browser HP ini (otomatis terhapus setelah 7 hari) agar tidak hilang saat layar dilipat/dibuka. Hapus (×) pasien yang sudah selesai agar memori dan penyimpanan tetap lega. Geser panel ke kiri untuk menutup. Di komputer: klik-tahan lalu seret panel ke kiri untuk menutup.</div>
 </div>
 <div id="note" class="hide">
   <header><b id="noteTitle">Catatan</b><button id="noteClose">Tutup</button></header>
@@ -230,7 +230,7 @@ button:disabled{opacity:.35;cursor:default}
       <div style="flex:none;width:150px"><label>Kontras</label><select id="noteKon"><option value="tanpa kontras">tanpa kontras</option><option value="tanpa dan dengan kontras">tanpa dan dengan kontras</option></select></div></div>
     <div class="rowb"><button id="noteIns" class="pri">Sisipkan template</button><button id="noteCopy">Salin semua</button><button id="noteClear">Kosongkan</button></div>
     <textarea id="noteTxt" rows="16" placeholder="Tulis bacaan / catatan untuk pasien ini… (tersimpan otomatis)"></textarea>
-    <div class="warn">Catatan tersimpan otomatis per pasien di perangkat ini saja, dan ikut terhapus saat pasien dihapus (×) atau setelah 24 jam.</div>
+    <div class="warn">Catatan tersimpan otomatis per pasien di perangkat ini saja, dan ikut terhapus saat pasien dihapus (×) atau otomatis setelah 7 hari.</div>
   </div>
 </div>
 <div id="edgeTabs" class="hide"><button id="edgeAsk" title="Buka Tanya Claude [Spasi]"><b>‹</b><span>Claude</span></button><button id="edgeNote" title="Buka Catatan [N]"><b>‹</b><span>Catatan</span></button></div>
@@ -247,7 +247,7 @@ const TAGS = {0x00020010:'ts',0x00080016:'sop',0x00080060:'mod',0x0020000E:'serU
   0x00200013:'inst',0x00280010:'rows',0x00280011:'cols',0x00280030:'ps',0x00181164:'ips',0x00180050:'thick',0x00180088:'sbs',
   0x00200032:'ipp',0x00200037:'iop',0x00280100:'bitsA',0x00280101:'bitsS',0x00280103:'pixRep',0x00281052:'inter',0x00281053:'slope',
   0x00281050:'wc',0x00281051:'ww',0x00280004:'photo',0x00280002:'spp',0x00280006:'planar',0x00280008:'frames',
-  0x00100010:'patName',0x0020000D:'studyUID',0x00080018:'sopUID',0x00180081:'te',0x00189082:'te2',0x00080008:'imgType',0x00100020:'patId',0x00080020:'studyDate',0x00081030:'studyDesc',0x00100040:'sex',0x00101010:'age'};
+  0x00100010:'patName',0x0020000D:'studyUID',0x00080018:'sopUID',0x00180081:'te',0x00189082:'te2',0x00080008:'imgType',0x00100020:'patId',0x00080020:'studyDate',0x00080030:'studyTime',0x00081030:'studyDesc',0x00100040:'sex',0x00101010:'age'};
 const USTAGS = new Set([0x00280010,0x00280011,0x00280100,0x00280101,0x00280103,0x00280002,0x00280006]);
 const SKIP_SOP = /^1\.2\.840\.10008\.5\.1\.4\.1\.1\.(66|88|104|481|9)\b/;
 const OK_TS = new Set(['1.2.840.10008.1.2','1.2.840.10008.1.2.1']);
@@ -438,7 +438,7 @@ function toSlices(t,buf,ds){
   const base = {serUID:t.serUID||'?', serNo:parseInt(t.serNo)||0, serDesc:t.serDesc||'', mod:t.mod||'', inst:parseInt(t.inst)||0,
     grp: nF>1 ? (t.sopUID||String(Math.random())) : '', imgType:t.imgType||'',
     te:num1(t.te,null), studyUID:t.studyUID||'',
-    photo:t.photo||'MONOCHROME2', pat:{name:(t.patName||'').replace(/\^/g,' ').trim(), id:t.patId||'', date:t.studyDate||'', desc:t.studyDesc||'', sex:t.sex||'', age:t.age||''}};
+    photo:t.photo||'MONOCHROME2', pat:{name:(t.patName||'').replace(/\^/g,' ').trim(), id:t.patId||'', date:t.studyDate||'', time:t.studyTime||'', desc:t.studyDesc||'', sex:t.sex||'', age:t.age||''}};
   const out=[];
   for(let f=0; f<nF; f++){
     const dec=t._dec?t._dec[f]:null; if(t._dec&&!dec) break;
@@ -1236,8 +1236,10 @@ function studyBytes(s){ let n=0; for(const S of s.series) for(const a of S.slice
 function renderPList(){
   const box=$('#plItems'); box.innerHTML='';
   if(!st.studies.length){ box.innerHTML='<div class="note" style="padding:8px">Belum ada pasien. Tekan "+ File / zip".</div>'; }
-  st.studies.forEach((s,i)=>{ const P=s.pat, d=document.createElement('div'); d.className='pi'+(i===st.si?' on':'');
-    const date=(P.date||'').replace(/(\d{4})(\d\d)(\d\d)/,'$3-$2-$1'), nimg=s.series.reduce((a,S)=>a+S.dim[2],0);
+  const key=s=>((s.pat.date||'').replace(/\D/g,'').padEnd(8,'9'))+((s.pat.time||'').replace(/\D/g,'').padEnd(6,'0').slice(0,6));
+  const order=st.studies.map((s,i)=>i).sort((x,y)=>{ const a=key(st.studies[x]), b=key(st.studies[y]); return a<b?-1:a>b?1:x-y; }); // terlama di atas
+  order.forEach(i=>{ const s=st.studies[i]; const P=s.pat, d=document.createElement('div'); d.className='pi'+(i===st.si?' on':'');
+    const tm=(P.time||'').replace(/\D/g,''), date=(P.date||'').replace(/(\d{4})(\d\d)(\d\d)/,'$3-$2-$1')+(tm.length>=4?' '+tm.slice(0,2)+':'+tm.slice(2,4):''), nimg=s.series.reduce((a,S)=>a+S.dim[2],0);
     d.innerHTML=`<b></b><span></span><span></span><button title="Hapus dari daftar">×</button>`;
     d.querySelector('b').textContent=P.name||'(tanpa nama)';
     d.querySelectorAll('span')[0].textContent=[P.id,P.sex,P.age,date].filter(Boolean).join(' · ');
@@ -1791,7 +1793,7 @@ $$('.selRes').forEach(s=>{ s.value=resMode(); s.onchange=()=>{ try{ localStorage
   if(st.studies.some(x=>x.series.some(S=>S.ds>1))&&s.value==='full') toast('Buka ulang file pasien agar tampil dengan resolusi penuh',4000); }; });
 
 /* ---------- pemulihan sesi (file di IndexedDB + status di localStorage) ---------- */
-const SESS_TTL=24*3600e3;
+const SESS_TTL=7*24*3600e3;
 const DB={ open(){ if(!this._p) this._p=new Promise((res,rej)=>{ if(!window.indexedDB) return rej(new Error('no idb'));
     const r=indexedDB.open('dicomviewer',1); r.onupgradeneeded=()=>r.result.createObjectStore('src',{keyPath:'id'});
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); return this._p; },
@@ -1876,7 +1878,7 @@ function swipeClose(el, dir, onClose, handle, cond){
 }
 swipeClose($('#plist'),'left',()=>showPList(false));
 /* ---------- catatan per pasien ---------- */
-const NOTE_TTL=24*3600e3;
+const NOTE_TTL=7*24*3600e3;
 function notesAll(){ try{ return JSON.parse(localStorage.getItem('dv_note')||'{}'); }catch(e){ return {}; } }
 function notesPut(o){ try{ localStorage.setItem('dv_note',JSON.stringify(o)); }catch(e){} }
 (function purgeNotes(){ const o=notesAll(), now=Date.now(); let ch=false; for(const k in o) if(now-(o[k].t||0)>NOTE_TTL){ delete o[k]; ch=true; } if(ch) notesPut(o); })();
