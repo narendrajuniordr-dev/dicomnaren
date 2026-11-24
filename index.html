@@ -1749,8 +1749,8 @@ async function ask(input, images){
     if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code)) $('#bAsk').classList.add('hide');
   }finally{ $('#askSend').disabled=false; $('#askFSend').disabled=false; $('#askStop').classList.add('hide'); AK.ctl=null; }
 }
-function handleTarget(){ return ($('#bAsk').classList.contains('hide')||AK.manual) ? 'note' : 'ask'; }
-function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok);
+function handleTarget(){ return $('#bAsk').classList.contains('hide') ? 'note' : 'ask'; }
+function updAskHandle(){ $('#askHandle span').textContent = handleTarget()==='ask' ? 'Tanya Claude ▲' : 'Catatan ▲'; const ok=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide') && st.studies&&st.studies.length>0 && isTouch && (innerWidth>=761 || $('#plist').classList.contains('hide')); $('#askHandle').classList.toggle('hide',!ok);
   const closed=$('#ask').classList.contains('hide') && $('#note').classList.contains('hide');
   const okE=closed && st.studies&&st.studies.length>0 && !isTouch;
   $('#edgeTabs').classList.toggle('hide',!okE); $('#edgeAsk').classList.toggle('hide',$('#bAsk').classList.contains('hide')); }
