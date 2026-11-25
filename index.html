@@ -116,6 +116,7 @@ button:disabled{opacity:.35;cursor:default}
 #toast.show{opacity:1}
 
 #noteTxt{flex:1;min-height:300px;font:13px/1.5 ui-monospace,Menlo,monospace}
+.vh{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 </style>
 </head>
 <body>
@@ -162,8 +163,8 @@ button:disabled{opacity:.35;cursor:default}
       <p>Buka file .zip, file .dcm, atau folder hasil ekspor (Horos dll).</p>
       <button class="big pri" id="bPickFiles">Pilih file / zip</button>
       <button class="big" id="bPickDir">Pilih folder</button>
-      <input type="file" id="inFiles" multiple class="hide">
-      <input type="file" id="inDir" webkitdirectory multiple class="hide">
+      <input type="file" id="inFiles" multiple class="vh" tabindex="-1">
+      <input type="file" id="inDir" webkitdirectory multiple class="vh" tabindex="-1">
       <div style="margin-top:10px"><label class="note" style="margin:0">Resolusi: </label><select class="selRes"><option value="full">Penuh (paling tajam)</option><option value="auto">Hemat RAM (otomatis turun bila studi besar)</option></select></div>
       <div id="prog"></div>
       <div class="note">File diproses di perangkat ini saja, tidak diunggah ke mana pun.<br>Mendukung DICOM tidak terkompresi, JPEG Lossless, dan RLE (CT, MRI, CR/DX). Di komputer bisa juga seret-lepas file/folder ke sini.</div>
@@ -1178,7 +1179,8 @@ $('#bHelp').onclick=()=>$('#modal').classList.remove('hide');
 $('#bCloseHelp').onclick=()=>$('#modal').classList.add('hide');
 $('#modal').onclick=e=>{ if(e.target.id==='modal') $('#modal').classList.add('hide'); };
 $('#bSave').onclick=saveImage;
-$('#bOpen').onclick=()=>$('#inFiles').click();
+function pickIn(sel){ const el=$(sel); try{ if(el.showPicker) el.showPicker(); else el.click(); }catch(e){ try{ el.click(); }catch(e2){ toast('Jendela pilih file diblokir di sini — seret file/folder ke jendela viewer',5000); } } }
+$('#bOpen').onclick=()=>pickIn('#inFiles');
 
 const TOOLKEY={l:'len',o:'roi',h:'hu',s:'scroll',w:'wl',g:'pan',z:'zoom',x:'cross'};
 function setTool(t){ st.tool=t; syncUI(); const n={len:'Ukur panjang',roi:'ROI bulat',hu:'Densitas HU',scroll:'Scroll',wl:'W/L',pan:'Geser',zoom:'Zoom',cross:'Silang'}[t]; toast('Alat: '+n,900); }
@@ -1247,6 +1249,7 @@ function renderPList(){
     d.onclick=e=>{ if(e.target.tagName==='BUTTON') return; openStudy(i); if(innerWidth<761) showPList(false); };
     d.querySelector('button').onclick=()=>removeStudy(i);
     box.appendChild(d); });
+  if(PENDING.length){ const d=document.createElement('div'); d.className='note'; d.style.cssText='padding:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap'; d.innerHTML='<span>'+PENDING.length+' sesi tersimpan belum dimuat</span><button id="plLoadP">Muat</button><button id="plClrP">Hapus</button>'; box.appendChild(d); d.querySelector('#plLoadP').onclick=loadPending; d.querySelector('#plClrP').onclick=clearPending; }
   if(typeof updAskHandle==='function') updAskHandle();
   $('#bPat').textContent='☰ Pasien'+(st.studies.length?' ('+st.studies.length+')':'');
 }
@@ -1318,10 +1321,10 @@ async function openFiles(files){
 }
 $('#bPat').onclick=()=>showPList($('#plist').classList.contains('hide'));
 $('#plClose').onclick=()=>showPList(false);
-$('#plAddF').onclick=()=>$('#inFiles').click();
-$('#plAddD').onclick=()=>$('#inDir').click();
-$('#bPickFiles').onclick=()=>$('#inFiles').click();
-$('#bPickDir').onclick=()=>$('#inDir').click();
+$('#plAddF').onclick=()=>pickIn('#inFiles');
+$('#plAddD').onclick=()=>pickIn('#inDir');
+$('#bPickFiles').onclick=()=>pickIn('#inFiles');
+$('#bPickDir').onclick=()=>pickIn('#inDir');
 $('#inFiles').onchange=e=>{ openFiles(e.target.files); e.target.value=''; };
 $('#inDir').onchange=e=>{ openFiles(e.target.files); e.target.value=''; };
 const opEl=$('#open');
@@ -1825,6 +1828,15 @@ function applyState(o){
     for(const S of s.series){ const x=so.series[S.key]; if(!x) continue; if(x.cur&&x.cur.length===3) S.cur=x.cur.map((v,i)=>Math.max(0,Math.min(S.dim[i]-1,v))); if(x.wl) S.wl=x.wl; if(x.wlName) S.wlName=x.wlName; if(x.meas) S.meas=x.meas; if(so.last===S.key) s.last=S; } }
   if(o.tool) st.tool=o.tool;
 }
+let PENDING=[];
+async function loadPending(){
+  const pr=$('#prog'); const list=PENDING.slice(); PENDING=[]; renderPList();
+  try{ for(let k=0;k<list.length;k++){ pr.innerHTML=`Memuat pasien tersimpan (${k+1}/${list.length})…<div class="barw"><i></i></div>`; const bar=pr.querySelector('i');
+    const {series}=await loadAll(list[k].files,async(i,n)=>{ bar.style.width=(100*i/n)+'%'; await new Promise(r=>setTimeout(r)); },{budget:budget(),coreSrc:document.getElementById('core').textContent});
+    addSeries(series.filter(S=>!(list[k].keys||[]).length||list[k].keys.includes(S.study))); renderPList(); }
+  }catch(e){ console.warn(e); toast('Gagal memuat pasien tersimpan'+(e&&e.name?' ('+e.name+')':''),5000); }
+  pr.textContent=''; renderPList(); }
+async function clearPending(){ if(!confirm('Hapus '+PENDING.length+' data pasien tersimpan yang belum dimuat?')) return; for(const x of PENDING){ try{ await DB.del(x.id); }catch(e){} } PENDING=[]; renderPList(); }
 async function restoreSession(){
   let srcs=[]; try{ srcs=await DB.all(); }catch(e){ if((()=>{ try{ return localStorage.getItem('dv_state'); }catch(_){ return 1; } })()) toast('Penyimpanan sesi tidak tersedia di browser ini'+(e&&e.name?' ('+e.name+')':'')+'.',5000); return; }
   const now=Date.now(); const old=srcs.filter(s=>now-s.t>SESS_TTL); for(const s of old){ try{ await DB.del(s.id); }catch(e){} }
@@ -1832,18 +1844,21 @@ async function restoreSession(){
   if(!srcs.length) return;
   let state=null; try{ state=JSON.parse(localStorage.getItem('dv_state')||'null'); }catch(e){}
   const pr=$('#prog'); _restoring=true;
+  // hanya pulihkan 1 sumber (pasien aktif terakhir / terbaru); sisanya tetap di penyimpanan agar tidak macet
+  let ai=state&&state.active? srcs.findIndex(x=>(x.keys||[]).includes(state.active)) : -1; if(ai<0) ai=srcs.length-1;
+  PENDING=srcs.filter((x,k)=>k!==ai);
   try{
-    for(let k=0;k<srcs.length;k++){
-      pr.innerHTML=`Memulihkan pasien sebelumnya (${k+1}/${srcs.length})…<div class="barw"><i></i></div>`; const bar=pr.querySelector('i');
+    for(const k of [ai]){
+      pr.innerHTML=`Memulihkan pasien terakhir…<div class="barw"><i></i></div>`; const bar=pr.querySelector('i');
       const {series}=await loadAll(srcs[k].files,async(i,n)=>{ bar.style.width=(100*i/n)+'%'; await new Promise(r=>setTimeout(r)); },{budget:budget(),coreSrc:document.getElementById('core').textContent});
-      addSeries(series);
+      addSeries(series.filter(S=>!(srcs[k].keys||[]).length||srcs[k].keys.includes(S.study)));
     }
     if(!st.studies.length){ pr.textContent=''; return; }
     applyState(state);
     $('#open').classList.add('hide'); lastPortrait=portrait(); pr.textContent='';
     let i=state&&state.active? st.studies.findIndex(s=>s.key===state.active) : 0; if(i<0) i=0;
     st.si=-1; openStudy(i); syncUI();
-    toast('Sesi sebelumnya dipulihkan ('+st.studies.length+' pasien)',3000);
+    renderPList(); toast('Pasien terakhir dipulihkan'+(PENDING.length?' ('+PENDING.length+' sesi lain tersimpan, buka ☰ Pasien › Muat)':''),4000);
   }catch(e){ console.warn(e); pr.textContent=''; toast('Sesi sebelumnya gagal dipulihkan'+(e&&e.name?' ('+e.name+')':'')+'. Silakan buka file lagi.',5000); }
   finally{ _restoring=false; }
 }
